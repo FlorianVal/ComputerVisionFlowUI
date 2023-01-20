@@ -66,3 +66,9 @@
   margin-bottom: 10px;
   margin-top: 10px;
 }
+
+.dropdown-menu {
+  top: "180px";
+  left: "50px";
+  margin: "50px";
+}
