@@ -6,12 +6,13 @@ import ReactFlow, {
   Background,
   useNodesState,
   useEdgesState,
+  ControlButton,
 } from 'reactflow';
 
 import { nodes as initialNodes, edges as initialEdges } from './ressources/initial-elements';
-import CustomNode from './components/CustomNode';
-import ImageInputNode from './components/ImageInputNode';
-
+import CustomNode from './components/Nodes/CustomNode';
+import ImageInputNode from './components/Nodes/ImageInputNode';
+import AddMenuDropdown from './components/AddNodeMenu';
 import 'reactflow/dist/style.css';
 import './styles/App.css';
 
@@ -25,6 +26,14 @@ const minimapStyle = {
 };
 
 const onInit = (reactFlowInstance) => console.log('flow loaded:', reactFlowInstance);
+
+function CustomControls() {
+  return (
+    <Controls showZoom={false}>
+      <AddMenuDropdown></AddMenuDropdown>
+    </Controls>
+  );
+}
 
 const App = () => {
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
@@ -55,7 +64,7 @@ const App = () => {
       nodeTypes={nodeTypes}
     >
       <MiniMap style={minimapStyle} zoomable pannable />
-      <Controls />
+      <CustomControls></CustomControls>
       <Background color="#aaa" gap={16} />
     </ReactFlow>
   );
