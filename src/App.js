@@ -10,8 +10,6 @@ import ReactFlow, {
 } from 'reactflow';
 
 import { nodes as initialNodes, edges as initialEdges } from './ressources/initial-elements';
-import CustomNode from './components/Nodes/CustomNode';
-import ImageInputNode from './components/Nodes/ImageInputNode';
 import AddMenuDropdown from './components/AddNodeMenu';
 import 'reactflow/dist/style.css';
 import './styles/App.css';
