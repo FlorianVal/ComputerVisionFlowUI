@@ -15,11 +15,7 @@ import ImageInputNode from './components/Nodes/ImageInputNode';
 import AddMenuDropdown from './components/AddNodeMenu';
 import 'reactflow/dist/style.css';
 import './styles/App.css';
-
-const nodeTypes = {
-  custom: CustomNode,
-  image_input: ImageInputNode,
-};
+import nodeTypes from './ressources/nodeTypes.js';
 
 const minimapStyle = {
   height: 120,
