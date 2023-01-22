@@ -1,31 +1,38 @@
-import React, { useState, memo } from 'react';
-import { useReactFlow, Handle } from 'reactflow';
+import React, { Component } from 'react';
+import { Handle } from 'reactflow';
 import Dropzone from 'react-dropzone';
 import ImageUpload from '../subcomponents/ImageUpload';
 
-const ImageInputNode = ({ id }) => {
-    const [image, setImage] = useState(null);
-    const { setNodes } = useReactFlow();
+class ImageInputNode extends React.Component {
+    constructor(props) {
+        super(props);
+        this.state = {
+            image: null,
+        };
+        this.handleImageChange = this.handleImageChange.bind(this);
+    }
 
-    const handleImageChange = (event) => {
+    handleImageChange(event) {
         const file = event.target.files[0];
         const reader = new FileReader();
         reader.onloadend = () => {
-            setImage(reader.result);
-            setNodes((nodes) => {
-                nodes.find((node) => node.id === id).data.image = reader.result;
+            this.setState({ image: reader.result });
+            this.props.setNodes((nodes) => {
+                nodes.find((node) => node.id === this.props.id).data.image = reader.result;
                 return nodes;
             });
         };
         reader.readAsDataURL(file);
-    };
+    }
 
-    return (
-        <div className="react-flow__node-input">
-            <ImageUpload> </ImageUpload>
-            <Handle type="source" position="right" id="a" isConnectable={true} />
-        </div>
-    );
-};
+    render() {
+        return (
+            <div className="react-flow__node-input">
+                <ImageUpload> </ImageUpload>
+                <Handle type="source" position="right" id="a" isConnectable={true} />
+            </div>
+        );
+    }
+}
 
-export default memo(ImageInputNode);
+export default ImageInputNode;
