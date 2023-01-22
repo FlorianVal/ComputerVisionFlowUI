@@ -9,16 +9,24 @@ import React from 'react';
 class AddMenuDropdown extends React.Component {
     constructor(props) {
         super(props);
+        this.onDragStart = this.onDragStart.bind(this);
         this.createNodeTypeList = this.createNodeTypeList.bind(this);
         this.items = this.createNodeTypeList(nodeTypes);
     }
+
     createNodeTypeList() {
         return Object.entries(nodeTitles).map(([key, value], index) => {
             return {
-                label: <a>{value}</a>,
+                label: <a draggable onDragStart={(event) => this.onDragStart(event, key)}>{value}</a>,
                 key: index.toString()
             }
         })
+    }
+
+    onDragStart(event, nodeType) {
+        console.log('onDragStart', nodeType);
+        event.dataTransfer.setData('application/reactflow', nodeType);
+        event.dataTransfer.effectAllowed = 'move';
     }
 
     render() {
