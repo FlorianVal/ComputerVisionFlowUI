@@ -4,7 +4,9 @@ import { useDropzone } from 'react-dropzone';
 const ImageUpload = () => {
     const [image, setImage] = useState(null);
     const { getRootProps, getInputProps, isDragActive } = useDropzone({
-        accept: 'image/*',
+        accept: {
+            'image/*': ['.jpeg', '.jpg', '.png'],
+        },
         maxSize: 5242880,
         multiple: false,
         onDrop: (acceptedFiles) => {
@@ -23,7 +25,7 @@ const ImageUpload = () => {
         <div {...getRootProps()}>
             <input {...getInputProps()} />
             {image ? (
-                <img src={image} alt="Uploaded Image" style={{ width: '100px', height: '100px' }} />
+                <img src={image} alt="Uploaded" style={{ width: '100px', height: '100px' }} />
             ) : (
                 <>
                     {isDragActive ? (

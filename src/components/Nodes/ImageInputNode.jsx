@@ -1,6 +1,5 @@
-import React, { Component } from 'react';
+import React from 'react';
 import { Handle } from 'reactflow';
-import Dropzone from 'react-dropzone';
 import ImageUpload from '../subcomponents/ImageUpload';
 
 class ImageInputNode extends React.Component {

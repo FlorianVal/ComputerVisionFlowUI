@@ -15,12 +15,8 @@ import 'reactflow/dist/style.css';
 import './styles/App.css';
 import nodeTypes from './ressources/nodeTypes.js';
 
-const minimapStyle = {
-  height: 120,
-};
-
 let id = 0;
-const getId = () => `dndnode_${id++}`;
+const getId = () => `ComputerVisionFlow_${id++}`;
 
 function CustomControls() {
   return (
@@ -32,7 +28,6 @@ function CustomControls() {
 
 const App = () => {
   const reactFlowWrapper = useRef(null);
-
 
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
@@ -66,7 +61,7 @@ const App = () => {
         position,
         data: { label: `${type} node` },
       };
-
+      console.log(newNode);
       setNodes((nds) => nds.concat(newNode));
     },
     [reactFlowInstance]
@@ -100,7 +95,7 @@ const App = () => {
             attributionPosition="top-right"
             nodeTypes={nodeTypes}
           >
-            <MiniMap style={minimapStyle} zoomable pannable />
+            <MiniMap style={{ height: 120 }} zoomable pannable />
             <CustomControls></CustomControls>
             <Background color="#aaa" gap={16} />
           </ReactFlow>
