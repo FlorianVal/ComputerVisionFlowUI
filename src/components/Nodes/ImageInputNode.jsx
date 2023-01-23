@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { memo } from 'react';
 import { Handle } from 'reactflow';
 import ImageUpload from '../subcomponents/ImageUpload';
 
@@ -34,4 +34,4 @@ class ImageInputNode extends React.Component {
     }
 }
 
-export default ImageInputNode;
+export default memo(ImageInputNode);
