@@ -1,22 +1,17 @@
 import React, { useState, useRef, useCallback } from 'react';
 import ReactFlow, {
-  addEdge,
   MiniMap,
   Controls,
   Background,
-  useNodesState,
-  useEdgesState,
   ReactFlowProvider,
 } from 'reactflow';
+import { shallow } from 'zustand/shallow';
+import useStore from './store';
 
-import { nodes as initialNodes, edges as initialEdges } from './ressources/initial-elements';
 import AddMenuDropdown from './components/AddNodeMenu';
 import 'reactflow/dist/style.css';
 import './styles/App.css';
 import nodeTypes from './ressources/nodeTypes.js';
-
-let id = 0;
-const getId = () => `ComputerVisionFlow_${id++}`;
 
 function CustomControls() {
   return (
@@ -26,18 +21,39 @@ function CustomControls() {
   );
 }
 
+const selector = (state) => ({
+  nodes: state.nodes,
+  edges: state.edges,
+  getNodes: state.getNodes,
+  getEdges: state.getEdges,
+  setNodes: state.setNodes,
+  addNodes: state.addNodes,
+  setEdges: state.setEdges,
+  addEdges: state.addEdges,
+  onNodesChange: state.onNodesChange,
+  onEdgesChange: state.onEdgesChange,
+});
+
 const App = () => {
   const reactFlowWrapper = useRef(null);
 
-  const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
-  const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
+
+  const { nodes, edges, getNodes, getEdges, setNodes, addNodes, setEdges, addEdges, onNodesChange, onEdgesChange } = useStore(selector, shallow);
+
   const [reactFlowInstance, setReactFlowInstance] = useState(null);
-  const onConnect = useCallback((params) => setEdges((eds) => addEdge(params, eds)), []);
 
   const onDragOver = useCallback((event) => {
     event.preventDefault();
     event.dataTransfer.dropEffect = 'move';
   }, []);
+
+  const onConnect = useCallback((event) => {
+    const sourceNode = nodes.find((node) => node.id === event.source);
+    const targetNode = nodes.find((node) => node.id === event.target);
+
+    targetNode.data.input = sourceNode.data.output;
+    addEdges(event.source, event.target);
+  });
 
   const onDrop = useCallback(
     (event) => {
@@ -55,28 +71,11 @@ const App = () => {
         x: event.clientX - reactFlowBounds.left,
         y: event.clientY - reactFlowBounds.top,
       });
-      const newNode = {
-        id: getId(),
-        type,
-        position,
-        data: { label: `${type} node` },
-      };
-      console.log(newNode);
-      setNodes((nds) => nds.concat(newNode));
+      addNodes(type, position);
     },
     [reactFlowInstance]
   );
 
-  // we are using a bit of a shortcut here to adjust the edge type
-  // this could also be done with a custom edge for example
-  const edgesWithUpdatedTypes = edges.map((edge) => {
-    if (edge.sourceHandle) {
-      const edgeType = nodes.find((node) => node.type === 'custom').data.selects[edge.sourceHandle];
-      edge.type = edgeType;
-    }
-
-    return edge;
-  });
 
   return (
     <div className="ComputerVisionFlow">
@@ -84,7 +83,7 @@ const App = () => {
         <div className="ComputerVisionFlow" ref={reactFlowWrapper}>
           <ReactFlow
             nodes={nodes}
-            edges={edgesWithUpdatedTypes}
+            edges={edges}
             onNodesChange={onNodesChange}
             onEdgesChange={onEdgesChange}
             onConnect={onConnect}
@@ -96,7 +95,7 @@ const App = () => {
             nodeTypes={nodeTypes}
           >
             <MiniMap style={{ height: 120 }} zoomable pannable />
-            <CustomControls></CustomControls>
+            <CustomControls />
             <Background color="#aaa" gap={16} />
           </ReactFlow>
         </div>
