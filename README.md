@@ -1,70 +1,26 @@
-# Getting Started with Create React App
+## Computer Vision Flow 🚀🔍
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+Welcome to the React Computer Vision Flow project! 
 
-## Available Scripts
+This project is a web UI built with React that allows you to create a computer vision flow by connecting various nodes, each representing a common computer vision algorithm such as Canny edge detection, erosion, dilation, and color change. The output of the flow can be seen in real-time, making it an incredibly powerful and intuitive tool for computer vision development. 🔍
 
-In the project directory, you can run:
+One of the key features of this project is that it is written entirely in React, making it easy to integrate into existing web projects. Additionally, the underlying logic is powered by Go code wrapped in WebAssembly, allowing for efficient performance right in the browser. 💻
 
-### `yarn start`
+This project can be used for a variety of computer vision tasks, such as:
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+Object detection and tracking 🚶‍♂️🚶‍♀️
+Image segmentation 🖼️
+Image preprocessing ⚙️
+And more! 🚀
+With this project, you'll be able to create powerful computer vision flows with no code, and have the results available in real-time. 🕰️
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+To get started with the project, simply clone the repository and run the following commands:
 
-### `yarn test`
+Copy code
+yarn install
+yarn start
+This will start a development server and you'll be able to access the application at http://localhost:3000. 🚀
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+We're excited to have you join the community of contributors making this project even better! 🤝
 
-### `yarn build`
-
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
-
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
-
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
-
-### `yarn eject`
-
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
-
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
-
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
-
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
-
-## Learn More
-
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
-
-To learn React, check out the [React documentation](https://reactjs.org/).
-
-### Code Splitting
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
-
-### Analyzing the Bundle Size
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
-
-### Making a Progressive Web App
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
-
-### Advanced Configuration
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
-
-### Deployment
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
-
-### `yarn build` fails to minify
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+Happy coding! 🎉
