@@ -48,12 +48,13 @@ const App = () => {
   }, []);
 
   const onConnect = useCallback((event) => {
-    const sourceNode = nodes.find((node) => node.id === event.source);
-    const targetNode = nodes.find((node) => node.id === event.target);
+    const sourceNode = getNodes().find((node) => node.id === event.source);
+    const targetNode = getNodes().find((node) => node.id === event.target);
 
     targetNode.data.input = sourceNode.data.output;
     addEdges(event.source, event.target);
-  });
+    onNodesChange(getNodes());
+  }, []);
 
   const onDrop = useCallback(
     (event) => {
