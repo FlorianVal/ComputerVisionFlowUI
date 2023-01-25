@@ -54,31 +54,30 @@ const App = () => {
   }, []);
 
 
-  const onDrop = useCallback(
-    (event) => {
-      event.preventDefault();
+  const onDrop = useCallback((event) => {
+    event.preventDefault();
 
-      const reactFlowBounds = reactFlowWrapper.current.getBoundingClientRect();
-      const type = event.dataTransfer.getData('application/reactflow');
+    const reactFlowBounds = reactFlowWrapper.current.getBoundingClientRect();
+    const type = event.dataTransfer.getData('application/reactflow');
 
-      // check if the dropped element is valid
-      if (typeof type === 'undefined' || !type) {
-        return;
-      }
+    // check if the dropped element is valid
+    if (typeof type === 'undefined' || !type) {
+      return;
+    }
 
-      const position = reactFlowInstance.project({
-        x: event.clientX - reactFlowBounds.left,
-        y: event.clientY - reactFlowBounds.top,
-      });
-      const new_node = {
-        id: getId(),
-        type,
-        position,
-        data: { label: nodeTypes[type].label, input: null, output: null },
-      };
-      console.log("In onDrop:", new_node)
-      setNodes((nds) => [...nds, new_node]);
-    },
+    const position = reactFlowInstance.project({
+      x: event.clientX - reactFlowBounds.left,
+      y: event.clientY - reactFlowBounds.top,
+    });
+    const new_node = {
+      id: getId(),
+      type,
+      position,
+      data: { label: nodeTypes[type].label, input: null, output: null },
+    };
+    console.log("In onDrop:", new_node)
+    setNodes((nds) => [...nds, new_node]);
+  },
     [reactFlowInstance]
   );
 
