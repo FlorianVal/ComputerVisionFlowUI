@@ -1,8 +1,7 @@
-import React, { useState, memo } from 'react';
+import React, { memo } from 'react';
 import { useDropzone } from 'react-dropzone';
 
-export default memo(({ id, data }) => {
-    const [image, setImage] = useState(null);
+export default memo(({ image, setImage }) => {
 
     const { getRootProps, getInputProps, isDragActive } = useDropzone({
         accept: {
@@ -16,10 +15,7 @@ export default memo(({ id, data }) => {
                 const reader = new FileReader();
                 reader.readAsDataURL(file);
                 reader.onload = () => {
-                    data.output = reader.result;
-                    data.file = file;
                     setImage(reader.result);
-
                 };
             }
         },

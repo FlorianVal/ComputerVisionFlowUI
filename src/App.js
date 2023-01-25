@@ -34,7 +34,26 @@ const App = () => {
 
   const [reactFlowInstance, setReactFlowInstance] = useState(null);
 
-  const onNodesChange = useCallback((changes) => setNodes((nds) => applyNodeChanges(changes, nds)), []);
+  const updateNodes = () => {
+    setNodes((nds) =>
+      nds.map((node) => {
+        node.data = { ...node.data };
+        return node;
+      })
+    );
+  };
+
+  const onNodesChange = useCallback((changes) => {
+    setNodes((nds) => applyNodeChanges(changes, nds))
+    store.getState().edges.forEach((edge) => {
+      const sourceNode = store.getState().getNodes().find((node) => node.id === edge.source);
+      const targetNode = store.getState().getNodes().find((node) => node.id === edge.target);
+
+      targetNode.data.input = sourceNode.data.output;
+    })
+    updateNodes();
+  }, []);
+
   const onEdgesChange = useCallback((changes) => setEdges((eds) => applyEdgeChanges(changes, eds)), []);
 
   const getId = () => `${store.getState().getNodes().length++}`;
@@ -45,12 +64,19 @@ const App = () => {
   }, []);
 
   const onConnect = useCallback((event) => {
+    setEdges((eds) => addEdge({ ...event }, eds));
     const sourceNode = store.getState().getNodes().find((node) => node.id === event.source);
     const targetNode = store.getState().getNodes().find((node) => node.id === event.target);
 
-    targetNode.data.input = sourceNode.data.output;
-    setEdges((eds) => addEdge({ ...event }, eds));
-    console.log("In onConnect:", store.getState().getNodes())
+    setNodes((nds) => {
+      nds.forEach((node) => {
+        if (node.id === event.target) {
+          node.data.input = sourceNode.data.output;
+        }
+      });
+      return nds;
+    });
+    updateNodes();
   }, []);
 
 
