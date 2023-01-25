@@ -24,12 +24,9 @@ function CustomControls() {
   );
 }
 
-let id = 0;
-const getId = () => `${id++}`;
 
 const App = () => {
   const reactFlowWrapper = useRef(null);
-
   const store = useStoreApi();
 
   const [nodes, setNodes] = useState([]);
@@ -40,6 +37,7 @@ const App = () => {
   const onNodesChange = useCallback((changes) => setNodes((nds) => applyNodeChanges(changes, nds)), []);
   const onEdgesChange = useCallback((changes) => setEdges((eds) => applyEdgeChanges(changes, eds)), []);
 
+  const getId = () => `${store.getState().getNodes().length++}`;
 
   const onDragOver = useCallback((event) => {
     event.preventDefault();
@@ -76,8 +74,9 @@ const App = () => {
         id: getId(),
         type,
         position,
-        data: { label: nodeTypes[type].label },
+        data: { label: nodeTypes[type].label, input: null, output: null },
       };
+      console.log("In onDrop:", new_node)
       setNodes((nds) => [...nds, new_node]);
     },
     [reactFlowInstance]
