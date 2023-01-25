@@ -1,13 +1,12 @@
-import React, { memo, useState } from "react";
-import { Handle } from "reactflow";
+import React, { memo } from "react";
+import { WrapHandles } from "../utils/utils";
 
-export default memo(({ data }) => {
+export default memo(({ type, data }) => {
 
     return (
-        <div className="react-flow__node-input">
-            <Handle type="target" position="left" id="input" isConnectable={true} />
+        <WrapHandles type={type} className="react-flow__node-input" >
             {data.input ? <img src={data.input} alt="Image" style={{ width: "100px", height: "100px" }} /> : <div>Connect me to display data</div>}
-        </div>
+        </WrapHandles>
     );
 }
 );

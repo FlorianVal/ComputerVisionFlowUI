@@ -2,8 +2,9 @@ import React, { memo, useEffect, useState } from 'react';
 import { Handle } from 'reactflow';
 import ImageUpload from '../subcomponents/ImageUpload';
 import { useUpdateNodeInternals, useStoreApi } from 'reactflow';
+import { WrapHandles } from "../utils/utils";
 
-export default memo(({ id, data }) => {
+export default memo(({ type, id, data }) => {
     /* Data model:
     {
         id: 'node-id',
@@ -30,9 +31,8 @@ export default memo(({ id, data }) => {
     }, [image]);
 
     return (
-        <div className="react-flow__node-input">
+        <WrapHandles type={type} className="react-flow__node-input" >
             <ImageUpload image={image} setImage={setImage} />
-            <Handle type="source" position="right" id="output" isConnectable={true} />
-        </div>
+        </WrapHandles>
     );
 });

@@ -1,9 +1,8 @@
-import React, { memo, useEffect, useState } from "react";
-import { Handle } from "reactflow";
-import { useStoreApi } from 'reactflow'
+import React, { memo, useEffect } from "react";
 import { useUpdateNodeInternals } from 'reactflow'
+import { WrapHandles } from "../utils/utils";
 
-export default memo(({ id, data }) => {
+export default memo(({ type, id, data }) => {
 
 
     // To update output of the node
@@ -20,11 +19,10 @@ export default memo(({ id, data }) => {
     }, [data.input]);
 
     return (
-        <div className="react-flow__node-input">
-            <Handle type="target" position="left" id="input" isConnectable={true} />
+        console.log("Rendering Image Input Node data", data),
+        <WrapHandles type={type} className="react-flow__node-default" >
             {data.input ? <img src={data.input} alt="Image" style={{ width: "100px", height: "100px" }} /> : <div>Connect me to display data</div>}
-            <Handle type="source" position="right" id="output" isConnectable={true} />
-        </div>
+        </WrapHandles>
     );
 }
 );
