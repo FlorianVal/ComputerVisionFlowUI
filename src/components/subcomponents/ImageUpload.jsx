@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, memo } from 'react';
 import { useDropzone } from 'react-dropzone';
 
-const ImageUpload = () => {
+export default memo(({ id, data }) => {
     const [image, setImage] = useState(null);
+
     const { getRootProps, getInputProps, isDragActive } = useDropzone({
         accept: {
             'image/*': ['.jpeg', '.jpg', '.png'],
@@ -13,13 +14,17 @@ const ImageUpload = () => {
             if (acceptedFiles.length > 0) {
                 const file = acceptedFiles[0];
                 const reader = new FileReader();
-                reader.onloadend = () => {
-                    setImage(reader.result);
-                };
                 reader.readAsDataURL(file);
+                reader.onload = () => {
+                    data.output = reader.result;
+                    data.file = file;
+                    setImage(reader.result);
+
+                };
             }
         },
     });
+
 
     return (
         <div {...getRootProps()}>
@@ -37,6 +42,6 @@ const ImageUpload = () => {
             )}
         </div>
     );
-};
+});
 
-export default ImageUpload;
+
