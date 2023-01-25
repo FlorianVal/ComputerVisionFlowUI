@@ -4,9 +4,12 @@ import ReactFlow, {
   Controls,
   Background,
   ReactFlowProvider,
+  useStoreApi,
+  addEdge,
+  applyEdgeChanges,
+  applyNodeChanges,
 } from 'reactflow';
-import { shallow } from 'zustand/shallow';
-import useStore from './store';
+
 
 import AddMenuDropdown from './components/AddNodeMenu';
 import 'reactflow/dist/style.css';
@@ -21,26 +24,22 @@ function CustomControls() {
   );
 }
 
-const selector = (state) => ({
-  nodes: state.nodes,
-  edges: state.edges,
-  getNodes: state.getNodes,
-  getEdges: state.getEdges,
-  setNodes: state.setNodes,
-  addNodes: state.addNodes,
-  setEdges: state.setEdges,
-  addEdges: state.addEdges,
-  onNodesChange: state.onNodesChange,
-  onEdgesChange: state.onEdgesChange,
-});
+let id = 0;
+const getId = () => `${id++}`;
 
 const App = () => {
   const reactFlowWrapper = useRef(null);
 
+  const store = useStoreApi();
 
-  const { nodes, edges, getNodes, getEdges, setNodes, addNodes, setEdges, addEdges, onNodesChange, onEdgesChange } = useStore(selector, shallow);
+  const [nodes, setNodes] = useState([]);
+  const [edges, setEdges] = useState([]);
 
   const [reactFlowInstance, setReactFlowInstance] = useState(null);
+
+  const onNodesChange = useCallback((changes) => setNodes((nds) => applyNodeChanges(changes, nds)), []);
+  const onEdgesChange = useCallback((changes) => setEdges((eds) => applyEdgeChanges(changes, eds)), []);
+
 
   const onDragOver = useCallback((event) => {
     event.preventDefault();
@@ -48,13 +47,14 @@ const App = () => {
   }, []);
 
   const onConnect = useCallback((event) => {
-    const sourceNode = getNodes().find((node) => node.id === event.source);
-    const targetNode = getNodes().find((node) => node.id === event.target);
+    const sourceNode = store.getState().getNodes().find((node) => node.id === event.source);
+    const targetNode = store.getState().getNodes().find((node) => node.id === event.target);
 
     targetNode.data.input = sourceNode.data.output;
-    addEdges(event.source, event.target);
-    onNodesChange(getNodes());
+    setEdges((eds) => addEdge({ ...event }, eds));
+    console.log("In onConnect:", store.getState().getNodes())
   }, []);
+
 
   const onDrop = useCallback(
     (event) => {
@@ -72,37 +72,47 @@ const App = () => {
         x: event.clientX - reactFlowBounds.left,
         y: event.clientY - reactFlowBounds.top,
       });
-      addNodes(type, position);
+      const new_node = {
+        id: getId(),
+        type,
+        position,
+        data: { label: nodeTypes[type].label },
+      };
+      setNodes((nds) => [...nds, new_node]);
     },
     [reactFlowInstance]
   );
 
 
   return (
-    <div className="ComputerVisionFlow">
-      <ReactFlowProvider>
-        <div className="ComputerVisionFlow" ref={reactFlowWrapper}>
-          <ReactFlow
-            nodes={nodes}
-            edges={edges}
-            onNodesChange={onNodesChange}
-            onEdgesChange={onEdgesChange}
-            onConnect={onConnect}
-            onDrop={onDrop}
-            onDragOver={onDragOver}
-            onInit={setReactFlowInstance}
-            fitView
-            attributionPosition="top-right"
-            nodeTypes={nodeTypes}
-          >
-            <MiniMap style={{ height: 120 }} zoomable pannable />
-            <CustomControls />
-            <Background color="#aaa" gap={16} />
-          </ReactFlow>
-        </div>
-      </ReactFlowProvider>
+    <div className="ComputerVisionFlow" ref={reactFlowWrapper}>
+      <ReactFlow
+        nodes={nodes}
+        edges={edges}
+        onNodesChange={onNodesChange}
+        onEdgesChange={onEdgesChange}
+        onConnect={onConnect}
+        onDrop={onDrop}
+        onDragOver={onDragOver}
+        onInit={setReactFlowInstance}
+        fitView
+        attributionPosition="top-right"
+        nodeTypes={nodeTypes}
+      >
+        <MiniMap style={{ height: 120 }} zoomable pannable />
+        <CustomControls />
+        <Background color="#aaa" gap={16} />
+      </ReactFlow>
     </div>
   );
 };
 
-export default App;
+function FlowWithProvider(props) {
+  return (
+    <ReactFlowProvider>
+      <App {...props} />
+    </ReactFlowProvider>
+  );
+}
+
+export default FlowWithProvider;
