@@ -1,5 +1,7 @@
-import React, { memo, useEffect, useRef } from "react";
-import { useUpdateNodeInternals } from "reactflow";
+/* global cv */
+
+import React, { memo, useEffect } from "react";
+import { useUpdateNodeInternals } from 'reactflow'
 import { WrapHandles } from "../utils/utils";
 import cv from "opencv-wasm";
 
@@ -9,49 +11,59 @@ export default memo(({ type, id, data }) => {
     const canvasRef = useRef(null);
 
     const run = () => {
-        console.log("Running Image Input Node", id);
-        if (data.input && canvasRef.current) {
-            // Create a canvas element to draw the image
-            const canvas = canvasRef.current;
-            const ctx = canvas.getContext("2d");
-            const img = new Image();
-            img.src = data.input;
-            img.onload = () => {
-                // Resize the canvas to fit the image
-                canvas.width = img.width;
-                canvas.height = img.height; 
-                // Draw the image on the canvas
-                ctx.drawImage(img, 0, 0);
-                // Create an OpenCV matrix from the canvas image data
-                const src = cv.matFromImageData(ctx.getImageData(0, 0, img.width, img.height));
-                // Create an empty matrix for the output
-                const dst = new cv.Mat();
-                // Apply a Gaussian blur filter with a kernel size of 5x5
-                cv.GaussianBlur(src, dst, new cv.Size(5, 5), 0, 0, cv.BORDER_DEFAULT);
-                // Put the output matrix back to the canvas
-                ctx.putImageData(new ImageData(new Uint8ClampedArray(dst.data), dst.cols, dst.rows), 0, 0);
-                // Free the memory
-                src.delete();
-                dst.delete();
-                // Set the output as the canvas data URL
-                data.output = canvas.toDataURL();
-                updateNodeInternals(id);
-            };
+        console.log("Running Transparent Node");
+        if (typeof cv === "undefined" || !data.input) {
+            console.error("OpenCV n'est pas prêt ou l'image n'est pas chargée");
+            return;
         }
+
+        // Créez un élément img temporaire pour charger les données d'image base64
+        const tempImage = new Image();
+        tempImage.src = data.input;
+        tempImage.onload = () => {
+            // Créez un élément canvas temporaire pour convertir l'image en cv.Mat
+            const tempCanvas = document.createElement("canvas");
+            tempCanvas.width = tempImage.width;
+            tempCanvas.height = tempImage.height;
+            const ctx = tempCanvas.getContext("2d");
+            ctx.drawImage(tempImage, 0, 0, tempImage.width, tempImage.height);
+
+            // Utilisez OpenCV.js pour traiter l'image
+            const outputCanvas = document.createElement("canvas");
+            const src = cv.imread(tempCanvas);
+            const dst = new cv.Mat();
+            cv.cvtColor(src, dst, cv.COLOR_RGBA2GRAY);
+
+            outputCanvas.width = dst.cols;
+            outputCanvas.height = dst.rows;
+            cv.imshow(outputCanvas, dst);
+            data.output = outputCanvas.toDataURL("image/png");
+
+            src.delete();
+            dst.delete();
+        };
+        console.log("Transparent Node data", data)
+        updateNodeInternals(id);
     };
 
     useEffect(() => {
-        run();
-    }, [data.input]);
+
+        if (typeof cv === "undefined") {
+            // OpenCV n'est pas encore prêt
+            console.error("OpenCV n'est pas prêt");
+            return;
+        }
+        console.log("Transparent Node data", data)
+        if (data.input) {
+            console.log("Running Transparent Node");
+            run();
+        }
+    }, []);
 
     return (
-        console.log("Rendering Image Input Node data", data),
-        <WrapHandles type={type} className="react-flow__node-default">
-            {data.input ? (
-                <canvas ref={canvasRef} style={{ width: "100px", height: "100px" }} />
-            ) : (
-                <div>Connect me to display data</div>
-            )}
+        //console.log("Rendering Transparent Node data", data),
+        <WrapHandles type={type} className="react-flow__node-default" >
+            {data.input ? <img src={data.output} alt="Image" style={{ width: "100px", height: "100px" }} /> : <div>Connect me to display data</div>}
         </WrapHandles>
     );
 });

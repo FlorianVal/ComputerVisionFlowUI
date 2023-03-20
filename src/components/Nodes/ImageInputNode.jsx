@@ -1,7 +1,7 @@
 import React, { memo, useEffect, useState } from 'react';
 import { Handle } from 'reactflow';
 import ImageUpload from '../subcomponents/ImageUpload';
-import { useUpdateNodeInternals, useStoreApi } from 'reactflow';
+import { useUpdateNodeInternals } from 'reactflow';
 import { WrapHandles } from "../utils/utils";
 
 export default memo(({ type, id, data }) => {
@@ -18,12 +18,11 @@ export default memo(({ type, id, data }) => {
     */
     const [image, setImage] = useState(null);
     const updateNodeInternals = useUpdateNodeInternals();
-    const store = useStoreApi();
+
     // To update output of the node
     const run = () => {
         console.log("Running Image Input Node");
-        data.output = image;
-        updateNodeInternals(id);
+        updateNodeInternals(id, { ...data, output: image });
     };
 
     useEffect(() => {

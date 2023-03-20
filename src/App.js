@@ -35,6 +35,7 @@ const App = () => {
   const [reactFlowInstance, setReactFlowInstance] = useState(null);
 
   const updateNodes = () => {
+    console.log("Should upadte nodes")
     setNodes((nds) =>
       nds.map((node) => {
         node.data = { ...node.data };
@@ -44,6 +45,7 @@ const App = () => {
   };
 
   const onNodesChange = useCallback((changes) => {
+    console.log("In onNodesChange")
     setNodes((nds) => applyNodeChanges(changes, nds))
     store.getState().edges.forEach((edge) => {
       const sourceNode = store.getState().getNodes().find((node) => node.id === edge.source);
@@ -59,11 +61,13 @@ const App = () => {
   const getId = () => `${store.getState().getNodes().length++}`;
 
   const onDragOver = useCallback((event) => {
+    console.log("In onDragOver")
     event.preventDefault();
     event.dataTransfer.dropEffect = 'move';
   }, []);
 
   const onConnect = useCallback((event) => {
+    console.log("In onConnect")
     setEdges((eds) => addEdge({ ...event }, eds));
     const sourceNode = store.getState().getNodes().find((node) => node.id === event.source);
     const targetNode = store.getState().getNodes().find((node) => node.id === event.target);
