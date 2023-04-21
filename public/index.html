@@ -24,6 +24,12 @@
       work correctly both with client-side routing and a non-root public URL.
       Learn how to configure a non-root public URL by running `npm run build`.
     -->
+    <script async src="%PUBLIC_URL%/opencv.js" onload="initializeOpenCV();" type="text/javascript"></script>
+      <script>
+        function initializeOpenCV() {
+          console.log("OpenCV Ready");
+        }
+      </script>
     <title>React App</title>
   </head>
   <body>
