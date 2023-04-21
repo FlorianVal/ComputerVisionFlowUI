@@ -26,3 +26,11 @@ This will start a development server and you'll be able to access the applicatio
 We're excited to have you join the community of contributors making this project even better! 🤝
 
 Happy coding! 🎉
+
+How to add new node :
+
+Write node in src/components/nodes
+
+add node in src/components/nodes/index.ts
+
+add everything in nodeTypes.ts
