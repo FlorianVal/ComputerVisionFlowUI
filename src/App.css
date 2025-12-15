@@ -1,0 +1,6 @@
+.react-flow__node {
+    /* Remove default React Flow node background */
+    background: transparent;
+    border: none;
+    box-shadow: none;
+}
