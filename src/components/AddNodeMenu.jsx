@@ -2,7 +2,7 @@ import React, { useState, useCallback } from 'react'
 import { Panel } from 'reactflow'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
-import { PlusIcon, ImageIcon, PaletteIcon, BlendIcon, ScanLineIcon } from 'lucide-react'
+import { PlusIcon, ImageIcon, PaletteIcon, BlendIcon, ScanLineIcon, LayersIcon } from 'lucide-react'
 
 /**
  * Node definitions with metadata for the add menu
@@ -34,6 +34,13 @@ export const nodeDefinitions = [
         label: 'Canny Edge',
         description: 'Detect edges using Canny algorithm',
         icon: ScanLineIcon,
+        category: 'Filter',
+    },
+    {
+        type: 'morphological',
+        label: 'Morphological Ops',
+        description: 'Apply Erosion or Dilation',
+        icon: LayersIcon,
         category: 'Filter',
     },
 ]

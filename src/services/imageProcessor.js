@@ -223,3 +223,63 @@ export async function processCanny(imageUrl, cv, { threshold1 = 50, threshold2 =
         if (edges) edges.delete()
     }
 }
+
+/**
+ * Process image with Morphological transformations using OpenCV
+ * @param {string} imageUrl - Input image URL
+ * @param {object} cv - OpenCV instance
+ * @param {object} options - Morphology options
+ * @param {string} options.operation - 'erode' | 'dilate'
+ * @param {number} options.iterations - Number of iterations (1-10)
+ * @returns {Promise<{outputUrl: string}>}
+ */
+export async function processMorphology(imageUrl, cv, { operation = 'erode', iterations = 1 } = {}) {
+    // Load full resolution image for processing
+    const { canvas, ctx, width, height, imageData } = await loadImageToCanvas(imageUrl, null)
+
+    let src = null
+    let dst = null
+    let M = null
+
+    try {
+        src = cv.imread(canvas)
+        dst = new cv.Mat()
+
+        // Create a 3x3 rectangular structuring element
+        // Note: In a real app we might want to let the user configure kernel size/shape
+        M = cv.getStructuringElement(cv.MORPH_RECT, new cv.Size(3, 3))
+
+        // Determine operation code
+        // For simple erosion/dilation we can use erode/dilate function directly
+        // or morphologyEx. Let's use direct functions for clarity as requested by user.
+
+        if (operation === 'erode') {
+            cv.erode(src, dst, M, new cv.Point(-1, -1), iterations)
+        } else if (operation === 'dilate') {
+            cv.dilate(src, dst, M, new cv.Point(-1, -1), iterations)
+        } else {
+            // Default to erode
+            cv.erode(src, dst, M, new cv.Point(-1, -1), iterations)
+        }
+
+        // Copy result to imageData
+        const dstData = new Uint8ClampedArray(dst.data)
+
+        // If the result is single channel (grayscale), convert to RGBA
+        // But erode/dilate on RGBA usually keeps 4 channels.
+        // OpenCV.js imread gives RGBA (CV_8UC4). Erode/Dilate on RGBA works channel-by-channel (or depending on implementation)
+        // Let's check: src is CV_8UC4. erode/dilate will output CV_8UC4.
+
+        for (let i = 0; i < dstData.length; i++) {
+            imageData.data[i] = dstData[i]
+        }
+
+        ctx.putImageData(imageData, 0, 0)
+
+        return { outputUrl: canvas.toDataURL('image/png') }
+    } finally {
+        if (src) src.delete()
+        if (dst) dst.delete()
+        if (M) M.delete()
+    }
+}
