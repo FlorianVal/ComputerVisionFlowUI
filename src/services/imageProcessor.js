@@ -283,3 +283,68 @@ export async function processMorphology(imageUrl, cv, { operation = 'erode', ite
         if (M) M.delete()
     }
 }
+
+/**
+ * Find and draw contours using OpenCV
+ * @param {string} imageUrl - Input image URL
+ * @param {object} cv - OpenCV instance
+ * @param {object} options - Options
+ * @param {boolean} options.fill - Whether to fill the contours
+ * @returns {Promise<{outputUrl: string}>}
+ */
+export async function processFindContours(imageUrl, cv, { fill = false } = {}) {
+    const { canvas, ctx, width, height, imageData } = await loadImageToCanvas(imageUrl, null)
+
+    let src = null
+    let gray = null
+    let binary = null
+    let contours = null
+    let hierarchy = null
+    let mask = null
+
+    try {
+        src = cv.imread(canvas)
+        gray = new cv.Mat()
+        binary = new cv.Mat()
+        contours = new cv.MatVector()
+        hierarchy = new cv.Mat()
+        // Initialize with OPAQUE black (0,0,0,255)
+        mask = new cv.Mat(height, width, cv.CV_8UC4, new cv.Scalar(0, 0, 0, 255))
+
+        // Preprocessing: Convert to gray and threshold
+        // We assume the user might input a raw image, so we threshold it first
+        cv.cvtColor(src, gray, cv.COLOR_RGBA2GRAY)
+        // Use Otsu's binarization for automatic thresholding
+        cv.threshold(gray, binary, 127, 255, cv.THRESH_BINARY | cv.THRESH_OTSU)
+
+        // Find contours
+        cv.findContours(binary, contours, hierarchy, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)
+
+        // Draw contours
+        const color = new cv.Scalar(255, 255, 255, 255) // White
+        const thickness = fill ? -1 : 2 // -1 (CV_FILLED) for fill, 2 for outline
+
+        cv.drawContours(mask, contours, -1, color, thickness)
+
+        // Put result on canvas
+        const maskData = mask.data
+        for (let i = 0; i < width * height; i++) {
+            const idx = i * 4
+            imageData.data[idx] = maskData[idx]
+            imageData.data[idx + 1] = maskData[idx + 1]
+            imageData.data[idx + 2] = maskData[idx + 2]
+            imageData.data[idx + 3] = maskData[idx + 3]
+        }
+
+        ctx.putImageData(imageData, 0, 0)
+
+        return { outputUrl: canvas.toDataURL('image/png') }
+    } finally {
+        if (src) src.delete()
+        if (gray) gray.delete()
+        if (binary) binary.delete()
+        if (contours) contours.delete()
+        if (hierarchy) hierarchy.delete()
+        if (mask) mask.delete()
+    }
+}
