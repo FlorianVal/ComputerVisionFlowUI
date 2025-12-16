@@ -52,7 +52,6 @@ function ImageSourceNode({ id, data, selected }) {
                 imageUrl: url,
                 imageName: file.name,
                 width: img.width,
-                width: img.width,
                 height: img.height,
                 metadata: {
                     colorSpace: 'RGB',
@@ -65,6 +64,40 @@ function ImageSourceNode({ id, data, selected }) {
         }
         img.src = url
     }, [updateOutput])
+
+    // Effect to output initial data if provided from defaultNodes
+    React.useEffect(() => {
+        if (data.imageUrl && !data.width) {
+            // Need to load to get dimensions if only URL provided
+            const img = new Image()
+            img.onload = () => {
+                updateOutput({
+                    imageUrl: data.imageUrl,
+                    imageName: data.imageName || 'Initial Image',
+                    width: img.width,
+                    height: img.height,
+                    metadata: {
+                        colorSpace: 'RGB',
+                        channels: 3
+                    }
+                })
+            }
+            img.src = data.imageUrl
+        } else if (data.imageUrl) {
+            // Already have everything
+            updateOutput({
+                imageUrl: data.imageUrl,
+                imageName: data.imageName || 'Initial Image',
+                width: data.width,
+                height: data.height,
+                metadata: {
+                    colorSpace: 'RGB',
+                    channels: 3
+                }
+            })
+        }
+    }, []) // Run once on mount
+
 
     return (
         <NodeWrapper

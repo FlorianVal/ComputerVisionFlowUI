@@ -14,33 +14,91 @@ import { OpenCVProvider } from '@/contexts/OpenCVContext'
 import { nodeTypes } from '@/nodes'
 import AddNodeMenu from '@/components/AddNodeMenu'
 import OpenCVStatus from '@/components/OpenCVStatus'
+import elephantImg from '../asset/imagenet_elephant.jpg'
 
-// Initial nodes for the "Hello World" pipeline
+// Helper to add some visual noise to node positions
+const jitter = (val, range = 20) => val + (Math.random() - 0.5) * range
+
+// Initial nodes for the visualization pipeline
 const initialNodes = [
     {
         id: 'source-1',
         type: 'imageSource',
-        position: { x: 100, y: 150 },
-        data: {},
+        position: { x: jitter(50), y: jitter(300, 150) },
+        data: { imageUrl: elephantImg, imageName: 'imagenet_elephant.jpg' },
     },
+    // Pipeline 1: Grayscale -> Blur -> Threshold -> Find Contours -> Erode -> Dilate
     {
         id: 'grayscale-1',
         type: 'grayscale',
-        position: { x: 450, y: 150 },
+        position: { x: jitter(400), y: jitter(100, 150) },
         data: {},
+    },
+    {
+        id: 'blur-1',
+        type: 'blur',
+        position: { x: jitter(700), y: jitter(100, 150) },
+        data: { strength: 5 },
+    },
+    {
+        id: 'thresh-1',
+        type: 'threshold',
+        position: { x: jitter(1000), y: jitter(100, 150) },
+        data: {
+            // Reject 140-255 (Keep 0-139)
+            mode: 'filter',
+            ranges: [[140, 255]]
+        },
+    },
+    {
+        id: 'contours-1',
+        type: 'findContours',
+        position: { x: jitter(1300), y: jitter(100, 150) },
+        data: { fill: true },
+    },
+    {
+        id: 'erode-1',
+        type: 'morphological',
+        position: { x: jitter(1600), y: jitter(100, 150) },
+        data: { operation: 'erode', iterations: 4 },
+    },
+    {
+        id: 'dilate-1',
+        type: 'morphological',
+        position: { x: jitter(1900), y: jitter(100, 150) },
+        data: { operation: 'dilate', iterations: 4 },
+    },
+    // Pipeline 2: Threshold (RGB) -> Find Contours
+    {
+        id: 'thresh-2',
+        type: 'threshold',
+        position: { x: jitter(400), y: jitter(500, 150) },
+        data: {
+            // Keep roughly middle values
+            mode: 'select',
+            ranges: [[50, 200], [50, 200], [50, 200]]
+        },
+    },
+    {
+        id: 'contours-2',
+        type: 'findContours',
+        position: { x: jitter(750), y: jitter(500, 150) },
+        data: { fill: false },
     },
 ]
 
-// Initial edge connecting source to grayscale
 const initialEdges = [
-    {
-        id: 'edge-1',
-        source: 'source-1',
-        sourceHandle: 'image-out',
-        target: 'grayscale-1',
-        targetHandle: 'image-in',
-        animated: true,
-    },
+    // Pipeline 1 Connections
+    { id: 'e1-1', source: 'source-1', sourceHandle: 'image-out', target: 'grayscale-1', targetHandle: 'image-in', animated: true },
+    { id: 'e1-2', source: 'grayscale-1', sourceHandle: 'image-out', target: 'blur-1', targetHandle: 'image-in', animated: true },
+    { id: 'e1-3', source: 'blur-1', sourceHandle: 'image-out', target: 'thresh-1', targetHandle: 'image-in', animated: true },
+    { id: 'e1-4', source: 'thresh-1', sourceHandle: 'image-out', target: 'contours-1', targetHandle: 'image-in', animated: true },
+    { id: 'e1-5', source: 'contours-1', sourceHandle: 'image-out', target: 'erode-1', targetHandle: 'image-in', animated: true },
+    { id: 'e1-6', source: 'erode-1', sourceHandle: 'image-out', target: 'dilate-1', targetHandle: 'image-in', animated: true },
+
+    // Pipeline 2 Connections
+    { id: 'e2-1', source: 'source-1', sourceHandle: 'image-out', target: 'thresh-2', targetHandle: 'image-in', animated: true },
+    { id: 'e2-2', source: 'thresh-2', sourceHandle: 'image-out', target: 'contours-2', targetHandle: 'image-in', animated: true },
 ]
 
 function FlowCanvas() {
