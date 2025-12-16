@@ -16,8 +16,11 @@ function GrayscaleNode({ id, data, selected }) {
     const updateOutput = useNodeOutput(id)
 
     // Callback when processing completes
-    const handleProcessingComplete = useCallback((outputUrl) => {
-        updateOutput({ imageUrl: outputUrl })
+    const handleProcessingComplete = useCallback((result) => {
+        updateOutput({
+            imageUrl: result.outputUrl,
+            metadata: result.metadata
+        })
     }, [updateOutput])
 
     // Use the image processor hook

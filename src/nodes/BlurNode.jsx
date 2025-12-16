@@ -41,11 +41,15 @@ function BlurNode({ id, data, selected }) {
     const processingOptions = useMemo(() => ({
         strength,
         blurType,
-    }), [strength, blurType])
+        metadata: inputData?.metadata // Pass metadata through
+    }), [strength, blurType, inputData])
 
     // Callback when processing completes
-    const handleProcessingComplete = useCallback((outputUrl) => {
-        updateOutput({ imageUrl: outputUrl })
+    const handleProcessingComplete = useCallback((result) => {
+        updateOutput({
+            imageUrl: result.outputUrl,
+            metadata: result.metadata
+        })
     }, [updateOutput])
 
     // Use the image processor hook

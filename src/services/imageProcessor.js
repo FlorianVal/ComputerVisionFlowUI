@@ -115,7 +115,13 @@ export async function processGrayscale(imageUrl, cv) {
         // Put result back on canvas
         ctx.putImageData(imageData, 0, 0)
 
-        return { outputUrl: canvas.toDataURL('image/png') }
+        return {
+            outputUrl: canvas.toDataURL('image/png'),
+            metadata: {
+                colorSpace: 'GRAY',
+                channels: 1
+            }
+        }
     } finally {
         if (src) src.delete()
         if (grayMat) grayMat.delete()
@@ -126,12 +132,10 @@ export async function processGrayscale(imageUrl, cv) {
  * Process image with blur using OpenCV
  * @param {string} imageUrl - Input image URL
  * @param {object} cv - OpenCV instance
- * @param {object} options - Blur options
- * @param {number} options.strength - Blur kernel size (will be made odd)
- * @param {string} options.blurType - 'gaussian' | 'box' | 'median'
+ * @param {object} options.metadata - Input image metadata
  * @returns {Promise<{outputUrl: string}>}
  */
-export async function processBlur(imageUrl, cv, { strength = 15, blurType = 'gaussian' } = {}) {
+export async function processBlur(imageUrl, cv, { strength = 15, blurType = 'gaussian', metadata } = {}) {
     // Load full resolution image for processing
     const { canvas, ctx, width, height, imageData } = await loadImageToCanvas(imageUrl, null)
 
@@ -168,7 +172,14 @@ export async function processBlur(imageUrl, cv, { strength = 15, blurType = 'gau
 
         ctx.putImageData(imageData, 0, 0)
 
-        return { outputUrl: canvas.toDataURL('image/png') }
+        return {
+            outputUrl: canvas.toDataURL('image/png'),
+            // Use passed metadata (e.g. Grayscale) or default to RGB
+            metadata: metadata || {
+                colorSpace: 'RGB',
+                channels: 3
+            }
+        }
     } finally {
         if (src) src.delete()
         if (dst) dst.delete()
@@ -216,7 +227,13 @@ export async function processCanny(imageUrl, cv, { threshold1 = 50, threshold2 =
 
         ctx.putImageData(imageData, 0, 0)
 
-        return { outputUrl: canvas.toDataURL('image/png') }
+        return {
+            outputUrl: canvas.toDataURL('image/png'),
+            metadata: {
+                colorSpace: 'GRAY', // Canny is an edge map (1 channel concept)
+                channels: 1
+            }
+        }
     } finally {
         if (src) src.delete()
         if (gray) gray.delete()
@@ -228,12 +245,10 @@ export async function processCanny(imageUrl, cv, { threshold1 = 50, threshold2 =
  * Process image with Morphological transformations using OpenCV
  * @param {string} imageUrl - Input image URL
  * @param {object} cv - OpenCV instance
- * @param {object} options - Morphology options
- * @param {string} options.operation - 'erode' | 'dilate'
- * @param {number} options.iterations - Number of iterations (1-10)
+ * @param {object} options.metadata - Input image metadata
  * @returns {Promise<{outputUrl: string}>}
  */
-export async function processMorphology(imageUrl, cv, { operation = 'erode', iterations = 1 } = {}) {
+export async function processMorphology(imageUrl, cv, { operation = 'erode', iterations = 1, metadata } = {}) {
     // Load full resolution image for processing
     const { canvas, ctx, width, height, imageData } = await loadImageToCanvas(imageUrl, null)
 
@@ -276,7 +291,14 @@ export async function processMorphology(imageUrl, cv, { operation = 'erode', ite
 
         ctx.putImageData(imageData, 0, 0)
 
-        return { outputUrl: canvas.toDataURL('image/png') }
+        return {
+            outputUrl: canvas.toDataURL('image/png'),
+            // Use passed metadata (e.g. Grayscale) or default to RGB
+            metadata: metadata || {
+                colorSpace: 'RGB',
+                channels: 3
+            }
+        }
     } finally {
         if (src) src.delete()
         if (dst) dst.delete()
@@ -338,7 +360,15 @@ export async function processFindContours(imageUrl, cv, { fill = false } = {}) {
 
         ctx.putImageData(imageData, 0, 0)
 
-        return { outputUrl: canvas.toDataURL('image/png') }
+        // Return RGB metadata since we draw contours on it
+        // Note: Even if original was Gray, the output is now RGB (white on black/gray)
+        return {
+            outputUrl: canvas.toDataURL('image/png'),
+            metadata: {
+                colorSpace: 'RGB',
+                channels: 3
+            }
+        }
     } finally {
         if (src) src.delete()
         if (gray) gray.delete()
@@ -346,5 +376,121 @@ export async function processFindContours(imageUrl, cv, { fill = false } = {}) {
         if (contours) contours.delete()
         if (hierarchy) hierarchy.delete()
         if (mask) mask.delete()
+    }
+}
+
+/**
+ * Process image with adaptive Thresholding using OpenCV
+ * @param {string} imageUrl - Input image URL
+ * @param {object} cv - OpenCV instance
+ * @param {object} options - Options
+ * @param {Array<number[]>} options.ranges - Array of [min, max] arrays for each channel
+ * @param {string} options.mode - 'select' (keep inside) or 'filter' (keep outside)
+ * @returns {Promise<{outputUrl: string, metadata: object}>}
+ */
+export async function processThreshold(imageUrl, cv, { ranges = [[0, 255]], mode = 'select' } = {}) {
+    const { canvas, ctx, width, height, imageData } = await loadImageToCanvas(imageUrl, null)
+
+    let src = null
+    let channels = null
+    let result = null
+
+    try {
+        src = cv.imread(canvas)
+        channels = new cv.MatVector()
+        cv.split(src, channels)
+
+        // Determine number of effective channels (ignoring Alpha)
+        // Note: Image loaded from Canvas is ALWAYS RGBA (4 channels), even if the original source was Grayscale.
+        // So we will always see 3 color channels (R, G, B) here.
+        // The adaptation logic relies on the 'ranges' passed from the node, which knows the logical format.
+        const numChannels = Math.min(channels.size(), 3)
+
+        // If specific ranges > 1 are provided, we treat as multichannel.
+        // If only 1 range provided, we treat as grayscale logic (apply same rule to all channels found).
+        const isGrayscale = ranges.length === 1 && numChannels >= 3
+
+        result = new cv.Mat()
+
+        // Combine masks
+        let compositeMask = null
+
+        for (let i = 0; i < numChannels; i++) {
+            // If grayscale mode, use the single range for all channels
+            const rangeIdx = isGrayscale ? 0 : i
+            const [min, max] = ranges[rangeIdx] || [0, 255]
+
+            const ch = channels.get(i)
+            const currentMask = new cv.Mat()
+
+            // InRange logic
+            // Use explicit rows/cols integers for Mat constructor to avoid binding TypeErrors
+            const lowerBound = new cv.Mat(ch.rows, ch.cols, ch.type(), new cv.Scalar(min))
+            const upperBound = new cv.Mat(ch.rows, ch.cols, ch.type(), new cv.Scalar(max))
+
+            try {
+                cv.inRange(ch, lowerBound, upperBound, currentMask)
+            } finally {
+                lowerBound.delete()
+                upperBound.delete()
+            }
+
+            if (compositeMask === null) {
+                compositeMask = currentMask
+            } else {
+                // Combine: we want pixels that match ALL channel criteria
+                // So bitwise AND
+                const temp = new cv.Mat()
+                cv.bitwise_and(compositeMask, currentMask, temp)
+                compositeMask.delete()
+                compositeMask = temp
+                currentMask.delete()
+            }
+        }
+
+        // Handle Mode
+        if (mode === 'filter') {
+            // Keep Outside: Invert the mask
+            const inverted = new cv.Mat()
+            cv.bitwise_not(compositeMask, inverted)
+            compositeMask.delete()
+            compositeMask = inverted
+        }
+
+        // Apply mask to original
+        // Set everything NOT in mask to black (0)
+        // source, mask, dest
+
+        // Create black background
+        result = new cv.Mat(height, width, cv.CV_8UC4, new cv.Scalar(0, 0, 0, 255))
+
+        // Copy masked pixels
+        src.copyTo(result, compositeMask)
+
+        // Put result buffer
+        const finalData = new Uint8ClampedArray(result.data)
+        imageData.data.set(finalData)
+
+        ctx.putImageData(imageData, 0, 0)
+
+        // Cleanup masks
+        if (compositeMask) compositeMask.delete()
+
+        // Return original metadata (inferred)
+        return {
+            outputUrl: canvas.toDataURL('image/png'),
+            metadata: {
+                colorSpace: isGrayscale ? 'GRAY' : 'RGB',
+                channels: isGrayscale ? 1 : 3
+            }
+        }
+
+    } finally {
+        if (src) src.delete()
+        if (channels) {
+            for (let i = 0; i < channels.size(); i++) channels.get(i).delete()
+            channels.delete()
+        }
+        if (result) result.delete()
     }
 }

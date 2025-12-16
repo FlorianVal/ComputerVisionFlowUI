@@ -76,7 +76,9 @@ export function useImageProcessor(processFn, inputImageUrl, options, onComplete,
                     return
                 }
 
-                onCompleteRef.current(result.outputUrl)
+                // Pass the full result object (including metadata) to the callback
+                // This allows nodes to receive metadata like channels/colorSpace
+                onCompleteRef.current(result)
                 finishProcessing()
             } catch (err) {
                 // Don't report errors for aborted operations

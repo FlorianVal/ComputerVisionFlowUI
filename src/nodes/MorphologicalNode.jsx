@@ -35,11 +35,15 @@ function MorphologicalNode({ id, data, selected }) {
     const processingOptions = useMemo(() => ({
         operation,
         iterations,
-    }), [operation, iterations])
+        metadata: inputData?.metadata // Pass metadata through
+    }), [operation, iterations, inputData])
 
     // Callback when processing completes
-    const handleProcessingComplete = useCallback((outputUrl) => {
-        updateOutput({ imageUrl: outputUrl })
+    const handleProcessingComplete = useCallback((result) => {
+        updateOutput({
+            imageUrl: result.outputUrl,
+            metadata: result.metadata
+        })
     }, [updateOutput])
 
     // Use the image processor hook

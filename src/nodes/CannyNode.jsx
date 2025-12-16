@@ -37,8 +37,11 @@ function CannyNode({ id, data, selected }) {
     }), [threshold1, threshold2])
 
     // Callback when processing completes
-    const handleProcessingComplete = useCallback((outputUrl) => {
-        updateOutput({ imageUrl: outputUrl })
+    const handleProcessingComplete = useCallback((result) => {
+        updateOutput({
+            imageUrl: result.outputUrl,
+            metadata: result.metadata
+        })
     }, [updateOutput])
 
     // Use the image processor hook
@@ -58,7 +61,7 @@ function CannyNode({ id, data, selected }) {
                 value={threshold1}
                 onChange={handleThreshold1Change}
                 min={0}
-                max={255}
+                max={500}
                 step={1}
                 showValue
             />
@@ -67,7 +70,7 @@ function CannyNode({ id, data, selected }) {
                 value={threshold2}
                 onChange={handleThreshold2Change}
                 min={0}
-                max={255}
+                max={500}
                 step={1}
                 showValue
             />

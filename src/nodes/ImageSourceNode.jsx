@@ -52,7 +52,12 @@ function ImageSourceNode({ id, data, selected }) {
                 imageUrl: url,
                 imageName: file.name,
                 width: img.width,
-                height: img.height
+                width: img.width,
+                height: img.height,
+                metadata: {
+                    colorSpace: 'RGB',
+                    channels: 3
+                }
             })
         }
         img.onerror = () => {

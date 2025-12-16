@@ -50,6 +50,13 @@ export const nodeDefinitions = [
         icon: PencilIcon,
         category: 'Filter',
     },
+    {
+        type: 'threshold',
+        label: 'Threshold',
+        description: 'Adaptive range thresholding',
+        icon: ScanLineIcon,
+        category: 'Filter',
+    },
 ]
 
 /**
