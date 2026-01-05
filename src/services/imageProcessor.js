@@ -546,3 +546,50 @@ export async function processRotate(imageUrl, cv, { angle = 0 } = {}) {
         if (M) M.delete()
     }
 }
+
+/**
+ * Adjust brightness and contrast of an image
+ * @param {string} imageUrl - Input image URL
+ * @param {object} cv - OpenCV instance
+ * @param {object} options - Options
+ * @param {number} options.brightness - Value to add to pixels (-100..100)
+ * @param {number} options.contrast - Multiplicative factor for contrast (0.0..3.0)
+ * @returns {Promise<{outputUrl: string}>}
+ */
+export async function processBrightnessContrast(imageUrl, cv, { brightness = 0, contrast = 1.0 } = {}) {
+    const { canvas, ctx, width, height, imageData } = await loadImageToCanvas(imageUrl, null)
+
+    let src = null
+    let dst = null
+
+    try {
+        src = cv.imread(canvas)
+        dst = new cv.Mat()
+
+        // cv.convertScaleAbs(src, dst, alpha, beta)
+        // alpha = contrast, beta = brightness
+        const alpha = contrast
+        const beta = brightness
+
+        cv.convertScaleAbs(src, dst, alpha, beta)
+
+        // Copy result to imageData
+        const dstData = new Uint8ClampedArray(dst.data)
+        for (let i = 0; i < dstData.length; i++) {
+            imageData.data[i] = dstData[i]
+        }
+
+        ctx.putImageData(imageData, 0, 0)
+
+        return {
+            outputUrl: canvas.toDataURL('image/png'),
+            metadata: {
+                colorSpace: 'RGB',
+                channels: 3
+            }
+        }
+    } finally {
+        if (src) src.delete()
+        if (dst) dst.delete()
+    }
+}

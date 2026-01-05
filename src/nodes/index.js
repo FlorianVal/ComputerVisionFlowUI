@@ -6,6 +6,7 @@ import MorphologicalNode from './MorphologicalNode'
 import FindContoursNode from './FindContoursNode'
 import ThresholdNode from './ThresholdNode'
 import RotateNode from './RotateNode'
+import BrightnessNode from './BrightnessNode'
 
 // Node type registry for React Flow
 export const nodeTypes = {
@@ -17,6 +18,7 @@ export const nodeTypes = {
     findContours: FindContoursNode,
     threshold: ThresholdNode,
     rotate: RotateNode,
+    brightness: BrightnessNode,
 }
 
 export { ImageSourceNode, GrayscaleNode, BlurNode, CannyNode, MorphologicalNode, FindContoursNode, ThresholdNode }
