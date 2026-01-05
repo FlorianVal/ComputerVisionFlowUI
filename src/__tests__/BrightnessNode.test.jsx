@@ -63,7 +63,10 @@ describe('BrightnessNode', () => {
             </TestWrapper>
         )
 
-        expect(screen.getByText('Brightness')).toBeInTheDocument()
+        // There may be multiple occurrences of the word "Brightness" (header and slider label).
+        // Ensure at least one exists.
+        const matches = screen.getAllByText('Brightness')
+        expect(matches.length).toBeGreaterThanOrEqual(1)
     })
 
     it('should show "No input connected" when no edges', () => {
