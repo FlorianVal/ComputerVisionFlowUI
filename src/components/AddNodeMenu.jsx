@@ -2,7 +2,7 @@ import React, { useState, useCallback } from 'react'
 import { Panel } from 'reactflow'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
-import { PlusIcon, ImageIcon, PaletteIcon, BlendIcon, ScanLineIcon, LayersIcon, PencilIcon } from 'lucide-react'
+import { PlusIcon, ImageIcon, PaletteIcon, BlendIcon, ScanLineIcon, LayersIcon, PencilIcon, RotateCw } from 'lucide-react'
 
 /**
  * Node definitions with metadata for the add menu
@@ -56,6 +56,13 @@ export const nodeDefinitions = [
         description: 'Adaptive range thresholding',
         icon: ScanLineIcon,
         category: 'Filter',
+    },
+    {
+        type: 'rotate',
+        label: 'Rotate',
+        description: 'Rotate image by angle',
+        icon: RotateCw,
+        category: 'Transform',
     },
 ]
 

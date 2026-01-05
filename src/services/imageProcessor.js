@@ -494,3 +494,55 @@ export async function processThreshold(imageUrl, cv, { ranges = [[0, 255]], mode
         if (result) result.delete()
     }
 }
+
+/**
+ * Process image by rotating it by an angle (degrees)
+ * @param {string} imageUrl - Input image URL
+ * @param {object} cv - OpenCV instance
+ * @param {object} options - Options
+ * @param {number} options.angle - Rotation angle in degrees (positive = CCW)
+ * @returns {Promise<{outputUrl: string}>}
+ */
+export async function processRotate(imageUrl, cv, { angle = 0 } = {}) {
+    const { canvas, ctx, width, height, imageData } = await loadImageToCanvas(imageUrl, null)
+
+    let src = null
+    let dst = null
+    let M = null
+
+    try {
+        src = cv.imread(canvas)
+        dst = new cv.Mat()
+
+        // Center of rotation
+        const center = new cv.Point(width / 2, height / 2)
+
+        // Get rotation matrix. OpenCV expects angle in degrees.
+        M = cv.getRotationMatrix2D(center, angle, 1.0)
+
+        // Warp affine - keep same output size (may crop corners)
+        const dsize = new cv.Size(width, height)
+        cv.warpAffine(src, dst, M, dsize, cv.INTER_LINEAR, cv.BORDER_CONSTANT, new cv.Scalar(0, 0, 0, 255))
+
+        // Copy result to imageData
+        const dstData = new Uint8ClampedArray(dst.data)
+        // dst is likely CV_8UC4, so length should match imageData.data
+        for (let i = 0; i < dstData.length; i++) {
+            imageData.data[i] = dstData[i]
+        }
+
+        ctx.putImageData(imageData, 0, 0)
+
+        return {
+            outputUrl: canvas.toDataURL('image/png'),
+            metadata: {
+                colorSpace: 'RGB',
+                channels: 3
+            }
+        }
+    } finally {
+        if (src) src.delete()
+        if (dst) dst.delete()
+        if (M) M.delete()
+    }
+}
