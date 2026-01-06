@@ -21,5 +21,5 @@ export const nodeTypes = {
     brightness: BrightnessNode,
 }
 
-export { ImageSourceNode, GrayscaleNode, BlurNode, CannyNode, MorphologicalNode, FindContoursNode, ThresholdNode }
+export { ImageSourceNode, GrayscaleNode, BlurNode, CannyNode, MorphologicalNode, FindContoursNode, ThresholdNode, RotateNode, BrightnessNode }
 
