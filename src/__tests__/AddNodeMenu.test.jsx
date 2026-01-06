@@ -11,47 +11,20 @@ const renderMenu = (onAddNode = vi.fn()) =>
     )
 
 describe('AddNodeMenu drag and drop', () => {
-    it('marks node entries as draggable', () => {
+    it('renders node entries', () => {
         renderMenu()
         fireEvent.click(screen.getByText('Add Node'))
 
-        const grayscaleButton = screen.getByText('Grayscale').closest('button')
-        expect(grayscaleButton).toHaveAttribute('draggable', 'true')
+        expect(screen.getByText('Grayscale')).toBeInTheDocument()
     })
 
-    it('sets reactflow data on drag start', () => {
+    it('keeps the menu open during pointer interaction', () => {
         renderMenu()
         fireEvent.click(screen.getByText('Add Node'))
 
         const grayscaleButton = screen.getByText('Grayscale').closest('button')
-        const dataTransfer = {
-            setData: vi.fn(),
-            effectAllowed: '',
-            setDragImage: vi.fn(),
-        }
-
-        fireEvent.dragStart(grayscaleButton, { dataTransfer })
-
-        expect(dataTransfer.setData).toHaveBeenCalledWith('application/reactflow', 'grayscale')
-        expect(dataTransfer.effectAllowed).toBe('move')
-        expect(dataTransfer.setDragImage).toHaveBeenCalledWith(
-            grayscaleButton,
-            expect.any(Number),
-            expect.any(Number)
-        )
-    })
-
-    it('keeps the menu open during drag start', () => {
-        renderMenu()
-        fireEvent.click(screen.getByText('Add Node'))
-
-        const grayscaleButton = screen.getByText('Grayscale').closest('button')
-        const dataTransfer = {
-            setData: vi.fn(),
-            effectAllowed: '',
-        }
-
-        fireEvent.dragStart(grayscaleButton, { dataTransfer })
+        fireEvent.mouseDown(grayscaleButton)
+        fireEvent.mouseMove(grayscaleButton)
 
         expect(screen.getByText('Available Nodes')).toBeInTheDocument()
     })

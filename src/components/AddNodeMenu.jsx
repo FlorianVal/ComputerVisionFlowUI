@@ -75,11 +75,10 @@ export const nodeDefinitions = [
     },
 ]
 
-function NodeMenuItem({ node, onClick, onDragStart, onDragEnd, resetKey }) {
+function NodeMenuItem({ node, onClick, onDragEnd }) {
     const ref = useRef(null)
 
     useDraggable(ref, {
-        onDragStart: (event) => onDragStart(event, node.type),
         onDragEnd: (event) => {
             if (ref.current) {
                 ref.current.style.transform = ''
@@ -92,15 +91,13 @@ function NodeMenuItem({ node, onClick, onDragStart, onDragEnd, resetKey }) {
         if (ref.current) {
             ref.current.style.transform = ''
         }
-    }, [resetKey])
+    }, [])
 
     const Icon = node.icon
 
     return (
         <div ref={ref}>
             <button
-                draggable
-                onDragStart={(event) => onDragStart(event, node.type)}
                 onClick={() => onClick(node.type)}
                 className="w-full flex items-start gap-3 p-3 rounded-lg hover:bg-accent/50 transition-colors text-left group"
             >
@@ -128,7 +125,6 @@ function NodeMenuItem({ node, onClick, onDragStart, onDragEnd, resetKey }) {
  */
 function AddNodeMenu({ onAddNode }) {
     const [isOpen, setIsOpen] = useState(false)
-    const [dragResetKey, setDragResetKey] = useState(0)
     const menuRef = useRef(null)
     const flowPaneRef = useRef(null)
     const { screenToFlowPosition } = useReactFlow()
@@ -150,20 +146,6 @@ function AddNodeMenu({ onAddNode }) {
         onAddNode(nodeType)
         setIsOpen(false)
     }, [onAddNode])
-
-    const handleDragStart = useCallback((event, nodeType) => {
-        event.dataTransfer.setData('application/reactflow', nodeType)
-        event.dataTransfer.effectAllowed = 'move'
-
-        if (event.dataTransfer.setDragImage && event.currentTarget) {
-            const target = event.currentTarget
-            event.dataTransfer.setDragImage(
-                target,
-                target.clientWidth / 2,
-                target.clientHeight / 2
-            )
-        }
-    }, [])
 
     const handleDragEndToCanvas = useCallback((event, nodeType) => {
         if (!flowPaneRef.current) {
@@ -187,8 +169,6 @@ function AddNodeMenu({ onAddNode }) {
                 y: flowPosition.y - NODE_CENTER_OFFSET.y,
             })
         }
-
-        setDragResetKey((key) => key + 1)
     }, [onAddNode, screenToFlowPosition])
 
     return (
@@ -218,12 +198,10 @@ function AddNodeMenu({ onAddNode }) {
 
                             {nodeDefinitions.map((node) => (
                                 <NodeMenuItem
-                                    key={`${node.type}-${dragResetKey}`}
+                                    key={node.type}
                                     node={node}
                                     onClick={handleAddNode}
-                                    onDragStart={handleDragStart}
                                     onDragEnd={handleDragEndToCanvas}
-                                    resetKey={dragResetKey}
                                 />
                             ))}
                         </div>
