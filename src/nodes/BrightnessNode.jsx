@@ -5,6 +5,11 @@ import { useImageProcessor } from '@/hooks/useImageProcessor'
 import { processBrightnessContrast } from '@/services/imageProcessor'
 import { Slider } from '@/components/ui/slider'
 
+/**
+ * BrightnessNode - Adjusts brightness and contrast of input image
+ * Uses OpenCV.js (required, no fallback)
+ * Refactored to use BaseNode via ExpandableNode
+ */
 function BrightnessNode({ id, data, selected }) {
     const { data: inputData, isConnected } = useNodeInput(id, 'image-in', DataTypes.IMAGE)
     const inputImageUrl = inputData?.imageUrl
