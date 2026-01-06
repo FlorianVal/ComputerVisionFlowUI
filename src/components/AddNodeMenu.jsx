@@ -84,6 +84,11 @@ function AddNodeMenu({ onAddNode }) {
         setIsOpen(false)
     }, [onAddNode])
 
+    const handleDragStart = useCallback((event, nodeType) => {
+        event.dataTransfer.setData('application/reactflow', nodeType)
+        event.dataTransfer.effectAllowed = 'move'
+    }, [])
+
     return (
         <Panel position="top-right" className="!top-16 !right-4">
             {/* Toggle Button */}
@@ -117,6 +122,8 @@ function AddNodeMenu({ onAddNode }) {
                                 return (
                                     <button
                                         key={node.type}
+                                        draggable
+                                        onDragStart={(event) => handleDragStart(event, node.type)}
                                         onClick={() => handleAddNode(node.type)}
                                         className="w-full flex items-start gap-3 p-3 rounded-lg hover:bg-accent/50 transition-colors text-left group"
                                     >
