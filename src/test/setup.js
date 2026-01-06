@@ -1,10 +1,10 @@
 import '@testing-library/jest-dom'
+/* global HTMLCanvasElement */
 
 // Provide a minimal HTMLCanvasElement.getContext('2d') polyfill for jsdom
 // to avoid needing the full 'canvas' native package in unit tests.
 // jsdom may implement getContext but return null; override it to ensure tests run reliably.
 if (typeof HTMLCanvasElement !== 'undefined') {
-	// eslint-disable-next-line no-undef
 	HTMLCanvasElement.prototype.getContext = function (type) {
 		if (type !== '2d') return null
 		return {

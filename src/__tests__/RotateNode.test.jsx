@@ -3,7 +3,7 @@ import { render, screen, waitFor } from '@testing-library/react'
 import { ReactFlowProvider } from 'reactflow'
 import RotateNode from '@/nodes/RotateNode'
 import { OpenCVProvider } from '@/contexts/OpenCVContext'
-import { useNodeInput, DataTypes } from '@/data'
+import { useNodeInput } from '@/data'
 
 // Mock reactflow hooks
 vi.mock('reactflow', async () => {
