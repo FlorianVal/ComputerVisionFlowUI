@@ -2,7 +2,7 @@
 
 VisioFlow is a powerful, node-based computer vision pipeline editor built with React and OpenCV.js. It allows users to visually design and execute image processing workflows directly in the browser.
 
-![VisioFlow Screenshot](https://via.placeholder.com/800x400?text=VisioFlow+Screenshot) *<!-- TODO: Add actual screenshot -->*
+![VisioFlow Screenshot](asset/screenshot.png) <!-- Actual UI Screenshot -->
 
 ## Features
 
