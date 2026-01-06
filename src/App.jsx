@@ -101,6 +101,8 @@ const initialEdges = [
     { id: 'e2-2', source: 'thresh-2', sourceHandle: 'image-out', target: 'contours-2', targetHandle: 'image-in', animated: true },
 ]
 
+const NODE_CENTER_OFFSET = { x: 120, y: 80 }
+
 function FlowCanvas() {
     const nodeIdCounter = useRef(2)
     const { getViewport, addNodes, setEdges, getEdges, screenToFlowPosition } = useReactFlow()
@@ -156,8 +158,12 @@ function FlowCanvas() {
         const nodeType = event.dataTransfer.getData('application/reactflow')
         if (!nodeType) return
 
-        const position = screenToFlowPosition({ x: event.clientX, y: event.clientY })
-        handleAddNode(nodeType, position)
+        const dropPosition = screenToFlowPosition({ x: event.clientX, y: event.clientY })
+        const centeredPosition = {
+            x: dropPosition.x - NODE_CENTER_OFFSET.x,
+            y: dropPosition.y - NODE_CENTER_OFFSET.y,
+        }
+        handleAddNode(nodeType, centeredPosition)
     }, [handleAddNode, screenToFlowPosition])
 
     return (

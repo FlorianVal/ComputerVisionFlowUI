@@ -101,6 +101,15 @@ function AddNodeMenu({ onAddNode }) {
     const handleDragStart = useCallback((event, nodeType) => {
         event.dataTransfer.setData('application/reactflow', nodeType)
         event.dataTransfer.effectAllowed = 'move'
+
+        if (event.dataTransfer.setDragImage && event.currentTarget) {
+            const target = event.currentTarget
+            event.dataTransfer.setDragImage(
+                target,
+                target.clientWidth / 2,
+                target.clientHeight / 2
+            )
+        }
     }, [])
 
     return (

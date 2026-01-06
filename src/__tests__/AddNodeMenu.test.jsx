@@ -27,12 +27,18 @@ describe('AddNodeMenu drag and drop', () => {
         const dataTransfer = {
             setData: vi.fn(),
             effectAllowed: '',
+            setDragImage: vi.fn(),
         }
 
         fireEvent.dragStart(grayscaleButton, { dataTransfer })
 
         expect(dataTransfer.setData).toHaveBeenCalledWith('application/reactflow', 'grayscale')
         expect(dataTransfer.effectAllowed).toBe('move')
+        expect(dataTransfer.setDragImage).toHaveBeenCalledWith(
+            grayscaleButton,
+            expect.any(Number),
+            expect.any(Number)
+        )
     })
 
     it('keeps the menu open during drag start', () => {
