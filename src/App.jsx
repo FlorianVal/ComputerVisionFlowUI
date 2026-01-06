@@ -12,6 +12,7 @@ import 'reactflow/dist/style.css'
 
 import { OpenCVProvider } from '@/contexts/OpenCVContext'
 import { nodeTypes } from '@/nodes'
+import { NODE_CENTER_OFFSET } from '@/constants/nodeLayout'
 import AddNodeMenu from '@/components/AddNodeMenu'
 import OpenCVStatus from '@/components/OpenCVStatus'
 import elephantImg from '../asset/imagenet_elephant.jpg'
@@ -100,8 +101,6 @@ const initialEdges = [
     { id: 'e2-1', source: 'source-1', sourceHandle: 'image-out', target: 'thresh-2', targetHandle: 'image-in', animated: true },
     { id: 'e2-2', source: 'thresh-2', sourceHandle: 'image-out', target: 'contours-2', targetHandle: 'image-in', animated: true },
 ]
-
-const NODE_CENTER_OFFSET = { x: 120, y: 80 }
 
 function FlowCanvas() {
     const nodeIdCounter = useRef(2)

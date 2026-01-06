@@ -1,8 +1,10 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react'
-import { Panel } from 'reactflow'
+import { Panel, useReactFlow } from 'reactflow'
+import { useDraggable } from '@neodrag/react'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { PlusIcon, ImageIcon, PaletteIcon, BlendIcon, ScanLineIcon, LayersIcon, PencilIcon, RotateCw, Sun } from 'lucide-react'
+import { NODE_CENTER_OFFSET } from '@/constants/nodeLayout'
 
 /**
  * Node definitions with metadata for the add menu
@@ -73,12 +75,63 @@ export const nodeDefinitions = [
     },
 ]
 
+function NodeMenuItem({ node, onClick, onDragStart, onDragEnd, resetKey }) {
+    const ref = useRef(null)
+
+    useDraggable(ref, {
+        onDragStart: (event) => onDragStart(event, node.type),
+        onDragEnd: (event) => {
+            if (ref.current) {
+                ref.current.style.transform = ''
+            }
+            onDragEnd(event, node.type)
+        },
+    })
+
+    useEffect(() => {
+        if (ref.current) {
+            ref.current.style.transform = ''
+        }
+    }, [resetKey])
+
+    const Icon = node.icon
+
+    return (
+        <div ref={ref}>
+            <button
+                draggable
+                onDragStart={(event) => onDragStart(event, node.type)}
+                onClick={() => onClick(node.type)}
+                className="w-full flex items-start gap-3 p-3 rounded-lg hover:bg-accent/50 transition-colors text-left group"
+            >
+                <div className="p-2 rounded-md bg-primary/10 text-primary group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
+                    <Icon className="w-4 h-4" />
+                </div>
+                <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                        <span className="font-medium text-sm">{node.label}</span>
+                        <span className="text-[10px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground">
+                            {node.category}
+                        </span>
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                        {node.description}
+                    </p>
+                </div>
+            </button>
+        </div>
+    )
+}
+
 /**
  * AddNodeMenu - A floating menu to add new nodes to the canvas
  */
 function AddNodeMenu({ onAddNode }) {
     const [isOpen, setIsOpen] = useState(false)
+    const [dragResetKey, setDragResetKey] = useState(0)
     const menuRef = useRef(null)
+    const flowPaneRef = useRef(null)
+    const { screenToFlowPosition } = useReactFlow()
 
     useEffect(() => {
         if (!isOpen) return
@@ -112,6 +165,32 @@ function AddNodeMenu({ onAddNode }) {
         }
     }, [])
 
+    const handleDragEndToCanvas = useCallback((event, nodeType) => {
+        if (!flowPaneRef.current) {
+            flowPaneRef.current = document.querySelector('.react-flow__pane')
+        }
+
+        const pane = flowPaneRef.current
+        if (!pane || event.clientX === undefined || event.clientY === undefined) return
+
+        const bounds = pane.getBoundingClientRect()
+        const inside =
+            event.clientX >= bounds.left &&
+            event.clientX <= bounds.right &&
+            event.clientY >= bounds.top &&
+            event.clientY <= bounds.bottom
+
+        if (inside) {
+            const flowPosition = screenToFlowPosition({ x: event.clientX, y: event.clientY })
+            onAddNode(nodeType, {
+                x: flowPosition.x - NODE_CENTER_OFFSET.x,
+                y: flowPosition.y - NODE_CENTER_OFFSET.y,
+            })
+        }
+
+        setDragResetKey((key) => key + 1)
+    }, [onAddNode, screenToFlowPosition])
+
     return (
         <Panel position="top-right" className="!top-16 !right-4">
             {/* Toggle Button */}
@@ -137,33 +216,16 @@ function AddNodeMenu({ onAddNode }) {
                                 Available Nodes
                             </p>
 
-                            {nodeDefinitions.map((node) => {
-                                const Icon = node.icon
-                                return (
-                                    <button
-                                        key={node.type}
-                                        draggable
-                                        onDragStart={(event) => handleDragStart(event, node.type)}
-                                        onClick={() => handleAddNode(node.type)}
-                                        className="w-full flex items-start gap-3 p-3 rounded-lg hover:bg-accent/50 transition-colors text-left group"
-                                    >
-                                        <div className="p-2 rounded-md bg-primary/10 text-primary group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
-                                            <Icon className="w-4 h-4" />
-                                        </div>
-                                        <div className="flex-1 min-w-0">
-                                            <div className="flex items-center gap-2">
-                                                <span className="font-medium text-sm">{node.label}</span>
-                                                <span className="text-[10px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground">
-                                                    {node.category}
-                                                </span>
-                                            </div>
-                                            <p className="text-xs text-muted-foreground mt-0.5">
-                                                {node.description}
-                                            </p>
-                                        </div>
-                                    </button>
-                                )
-                            })}
+                            {nodeDefinitions.map((node) => (
+                                <NodeMenuItem
+                                    key={`${node.type}-${dragResetKey}`}
+                                    node={node}
+                                    onClick={handleAddNode}
+                                    onDragStart={handleDragStart}
+                                    onDragEnd={handleDragEndToCanvas}
+                                    resetKey={dragResetKey}
+                                />
+                            ))}
                         </div>
                     </Card>
                 </>
