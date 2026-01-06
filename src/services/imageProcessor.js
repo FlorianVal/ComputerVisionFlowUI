@@ -551,9 +551,9 @@ export async function processRotate(imageUrl, cv, { angle = 0 } = {}) {
  * Adjust brightness and contrast of an image
  * @param {string} imageUrl - Input image URL
  * @param {object} cv - OpenCV instance
- * @param {object} options - Options
- * @param {number} options.brightness - Value to add to pixels (-100..100)
- * @param {number} options.contrast - Multiplicative factor for contrast (0.0..3.0)
+ * @param {{brightness: number, contrast: number}} [options] - Adjustment options
+ * @param {number} [options.brightness=0] - Value to add to pixels (-100..100)
+ * @param {number} [options.contrast=1.0] - Multiplicative factor for contrast (0.0..3.0)
  * @returns {Promise<{outputUrl: string}>}
  */
 export async function processBrightnessContrast(imageUrl, cv, { brightness = 0, contrast = 1.0 } = {}) {
