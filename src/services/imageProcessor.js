@@ -557,7 +557,7 @@ export async function processRotate(imageUrl, cv, { angle = 0 } = {}) {
  * @returns {Promise<{outputUrl: string}>}
  */
 export async function processBrightnessContrast(imageUrl, cv, { brightness = 0, contrast = 1.0 } = {}) {
-    const { canvas, ctx, width, height, imageData } = await loadImageToCanvas(imageUrl, null)
+    const { canvas, ctx, imageData } = await loadImageToCanvas(imageUrl, null)
 
     let src = null
     let dst = null
