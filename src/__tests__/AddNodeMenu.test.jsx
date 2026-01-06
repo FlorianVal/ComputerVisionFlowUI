@@ -34,4 +34,19 @@ describe('AddNodeMenu drag and drop', () => {
         expect(dataTransfer.setData).toHaveBeenCalledWith('application/reactflow', 'grayscale')
         expect(dataTransfer.effectAllowed).toBe('move')
     })
+
+    it('keeps the menu open during drag start', () => {
+        renderMenu()
+        fireEvent.click(screen.getByText('Add Node'))
+
+        const grayscaleButton = screen.getByText('Grayscale').closest('button')
+        const dataTransfer = {
+            setData: vi.fn(),
+            effectAllowed: '',
+        }
+
+        fireEvent.dragStart(grayscaleButton, { dataTransfer })
+
+        expect(screen.getByText('Available Nodes')).toBeInTheDocument()
+    })
 })
