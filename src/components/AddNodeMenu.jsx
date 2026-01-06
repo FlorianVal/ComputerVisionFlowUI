@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react'
+import React, { useState, useCallback, useEffect, useRef } from 'react'
 import { Panel } from 'reactflow'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
@@ -78,6 +78,20 @@ export const nodeDefinitions = [
  */
 function AddNodeMenu({ onAddNode }) {
     const [isOpen, setIsOpen] = useState(false)
+    const menuRef = useRef(null)
+
+    useEffect(() => {
+        if (!isOpen) return
+        const onKeyDown = (event) => {
+            if (event.key !== 'Escape') return
+            const active = document.activeElement
+            if (menuRef.current?.contains(active)) {
+                setIsOpen(false)
+            }
+        }
+        window.addEventListener('keydown', onKeyDown)
+        return () => window.removeEventListener('keydown', onKeyDown)
+    }, [isOpen])
 
     const handleAddNode = useCallback((nodeType) => {
         onAddNode(nodeType)
@@ -87,6 +101,7 @@ function AddNodeMenu({ onAddNode }) {
     const handleDragStart = useCallback((event, nodeType) => {
         event.dataTransfer.setData('application/reactflow', nodeType)
         event.dataTransfer.effectAllowed = 'move'
+        setIsOpen(false)
     }, [])
 
     return (
@@ -105,13 +120,10 @@ function AddNodeMenu({ onAddNode }) {
             {/* Dropdown Menu */}
             {isOpen && (
                 <>
-                    {/* Backdrop to close on click outside */}
-                    <div
-                        className="fixed inset-0 z-10"
-                        onClick={() => setIsOpen(false)}
-                    />
-
-                    <Card className="absolute top-12 right-0 z-20 w-64 p-2 shadow-xl animate-in fade-in slide-in-from-top-2 duration-200">
+                    <Card
+                        ref={menuRef}
+                        className="absolute top-12 right-0 z-20 w-64 p-2 shadow-xl animate-in fade-in slide-in-from-top-2 duration-200"
+                    >
                         <div className="space-y-1">
                             <p className="px-2 py-1 text-xs font-medium text-muted-foreground uppercase tracking-wider">
                                 Available Nodes
