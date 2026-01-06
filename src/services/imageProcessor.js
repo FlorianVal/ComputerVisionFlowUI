@@ -501,9 +501,10 @@ export async function processThreshold(imageUrl, cv, { ranges = [[0, 255]], mode
  * @param {object} cv - OpenCV instance
  * @param {object} options - Options
  * @param {number} options.angle - Rotation angle in degrees (positive = CCW)
+ * @param {object} options.metadata - Input image metadata
  * @returns {Promise<{outputUrl: string}>}
  */
-export async function processRotate(imageUrl, cv, { angle = 0 } = {}) {
+export async function processRotate(imageUrl, cv, { angle = 0, metadata } = {}) {
     const { canvas, ctx, width, height, imageData } = await loadImageToCanvas(imageUrl, null)
 
     let src = null
@@ -535,7 +536,8 @@ export async function processRotate(imageUrl, cv, { angle = 0 } = {}) {
 
         return {
             outputUrl: canvas.toDataURL('image/png'),
-            metadata: {
+            // Use passed metadata (e.g. Grayscale) or default to RGB
+            metadata: metadata || {
                 colorSpace: 'RGB',
                 channels: 3
             }
