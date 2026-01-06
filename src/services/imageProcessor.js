@@ -556,7 +556,7 @@ export async function processRotate(imageUrl, cv, { angle = 0 } = {}) {
  * @param {number} options.contrast - Multiplicative factor for contrast (0.0..3.0)
  * @returns {Promise<{outputUrl: string}>}
  */
-export async function processBrightnessContrast(imageUrl, cv, { brightness = 0, contrast = 1.0 } = {}) {
+export async function processBrightnessContrast(imageUrl, cv, { brightness = 0, contrast = 1.0, metadata } = {}) {
     const { canvas, ctx, width, height, imageData } = await loadImageToCanvas(imageUrl, null)
 
     let src = null
@@ -583,7 +583,8 @@ export async function processBrightnessContrast(imageUrl, cv, { brightness = 0, 
 
         return {
             outputUrl: canvas.toDataURL('image/png'),
-            metadata: {
+            // Use passed metadata (e.g. Grayscale) or default to RGB
+            metadata: metadata || {
                 colorSpace: 'RGB',
                 channels: 3
             }
