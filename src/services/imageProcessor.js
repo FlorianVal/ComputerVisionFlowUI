@@ -551,13 +551,14 @@ export async function processRotate(imageUrl, cv, { angle = 0 } = {}) {
  * Adjust brightness and contrast of an image
  * @param {string} imageUrl - Input image URL
  * @param {object} cv - OpenCV instance
- * @param {{brightness: number, contrast: number}} [options] - Adjustment options
- * @param {number} [options.brightness=0] - Value to add to pixels (-100..100)
- * @param {number} [options.contrast=1.0] - Multiplicative factor for contrast (0.0..3.0)
- * @returns {Promise<{outputUrl: string}>}
+ * @param {object} options - Options
+ * @param {number} options.brightness - Value to add to pixels (-100..100)
+ * @param {number} options.contrast - Multiplicative factor for contrast (0.0..3.0)
+ * @param {object} options.metadata - Input image metadata (colorSpace, channels)
+ * @returns {Promise<{outputUrl: string, metadata: {colorSpace: string, channels: number}}>}
  */
-export async function processBrightnessContrast(imageUrl, cv, { brightness = 0, contrast = 1.0 } = {}) {
-    const { canvas, ctx, imageData } = await loadImageToCanvas(imageUrl, null)
+export async function processBrightnessContrast(imageUrl, cv, { brightness = 0, contrast = 1.0, metadata } = {}) {
+    const { canvas, ctx, width, height, imageData } = await loadImageToCanvas(imageUrl, null)
 
     let src = null
     let dst = null
@@ -583,7 +584,8 @@ export async function processBrightnessContrast(imageUrl, cv, { brightness = 0, 
 
         return {
             outputUrl: canvas.toDataURL('image/png'),
-            metadata: {
+            // Use passed metadata (e.g. Grayscale) or default to RGB
+            metadata: metadata || {
                 colorSpace: 'RGB',
                 channels: 3
             }
