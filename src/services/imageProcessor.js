@@ -187,6 +187,55 @@ export async function processBlur(imageUrl, cv, { strength = 15, blurType = 'gau
 }
 
 /**
+ * Process image with unsharp masking using OpenCV
+ * @param {string} imageUrl - Input image URL
+ * @param {object} cv - OpenCV instance
+ * @param {object} options - Sharpen options
+ * @param {number} options.strength - Sharpen strength (0-2)
+ * @param {number} options.radius - Gaussian blur radius (odd integer)
+ * @param {object} options.metadata - Input image metadata
+ * @returns {Promise<{outputUrl: string}>}
+ */
+export async function processSharpen(imageUrl, cv, { strength = 1.0, radius = 3, metadata } = {}) {
+    const { canvas, ctx, imageData } = await loadImageToCanvas(imageUrl, null)
+
+    const kernelSize = radius % 2 === 0 ? radius + 1 : radius
+
+    let src = null
+    let blurred = null
+    let dst = null
+
+    try {
+        src = cv.imread(canvas)
+        blurred = new cv.Mat()
+        dst = new cv.Mat()
+
+        const ksize = new cv.Size(kernelSize, kernelSize)
+        cv.GaussianBlur(src, blurred, ksize, 0)
+        cv.addWeighted(src, 1 + strength, blurred, -strength, 0, dst)
+
+        const sharpenedData = new Uint8ClampedArray(dst.data)
+        for (let i = 0; i < sharpenedData.length; i++) {
+            imageData.data[i] = sharpenedData[i]
+        }
+
+        ctx.putImageData(imageData, 0, 0)
+
+        return {
+            outputUrl: canvas.toDataURL('image/png'),
+            metadata: metadata || {
+                colorSpace: 'RGB',
+                channels: 3
+            }
+        }
+    } finally {
+        if (src) src.delete()
+        if (blurred) blurred.delete()
+        if (dst) dst.delete()
+    }
+}
+
+/**
  * Process image with Canny edge detection using OpenCV
  * @param {string} imageUrl - Input image URL
  * @param {object} cv - OpenCV instance
