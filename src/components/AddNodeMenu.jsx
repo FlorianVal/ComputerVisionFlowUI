@@ -2,7 +2,7 @@ import React, { useState, useCallback } from 'react'
 import { Panel } from 'reactflow'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
-import { PlusIcon, ImageIcon, PaletteIcon, BlendIcon, ScanLineIcon, LayersIcon, PencilIcon, RotateCw, Sun } from 'lucide-react'
+import { PlusIcon, ImageIcon, PaletteIcon, BlendIcon, ScanLineIcon, LayersIcon, PencilIcon, RotateCw, Sun, Sparkles } from 'lucide-react'
 
 /**
  * Node definitions with metadata for the add menu
@@ -69,6 +69,13 @@ export const nodeDefinitions = [
         label: 'Brightness',
         description: 'Adjust brightness and contrast',
         icon: Sun,
+        category: 'Adjust',
+    },
+    {
+        type: 'sharpen',
+        label: 'Sharpen',
+        description: 'Enhance edges using unsharp masking',
+        icon: Sparkles,
         category: 'Adjust',
     },
 ]
