@@ -71,6 +71,13 @@ export const nodeDefinitions = [
         icon: Sun,
         category: 'Adjust',
     },
+    {
+        type: 'invert',
+        label: 'Invert Colors',
+        description: 'Invert image colors',
+        icon: PaletteIcon,
+        category: 'Filter',
+    },
 ]
 
 /**
