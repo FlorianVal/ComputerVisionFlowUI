@@ -187,6 +187,49 @@ export async function processBlur(imageUrl, cv, { strength = 15, blurType = 'gau
 }
 
 /**
+ * Process image by inverting colors
+ * @param {string} imageUrl - Input image URL
+ * @param {object} cv - OpenCV instance
+ * @param {object} options - Options
+ * @param {object} [options.metadata] - Input image metadata
+ * @returns {Promise<{outputUrl: string, metadata: object}>}
+ */
+export async function processInvert(imageUrl, cv, { metadata } = {}) {
+    const { canvas, ctx, width, height, imageData } = await loadImageToCanvas(imageUrl, null)
+
+    let src = null
+    let dst = null
+
+    try {
+        src = cv.imread(canvas)
+        dst = new cv.Mat()
+
+        // Invert colors: bitwise_not
+        cv.bitwise_not(src, dst)
+
+        // Copy result to imageData
+        const dstData = new Uint8ClampedArray(dst.data)
+        for (let i = 0; i < dstData.length; i++) {
+            imageData.data[i] = dstData[i]
+        }
+
+        ctx.putImageData(imageData, 0, 0)
+
+        return {
+            outputUrl: canvas.toDataURL('image/png'),
+            // Maintain original metadata or default to RGB
+            metadata: metadata || {
+                colorSpace: 'RGB',
+                channels: 3
+            }
+        }
+    } finally {
+        if (src) src.delete()
+        if (dst) dst.delete()
+    }
+}
+
+/**
  * Process image with Canny edge detection using OpenCV
  * @param {string} imageUrl - Input image URL
  * @param {object} cv - OpenCV instance
