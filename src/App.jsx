@@ -12,6 +12,7 @@ import 'reactflow/dist/style.css'
 
 import { OpenCVProvider } from '@/contexts/OpenCVContext'
 import { nodeTypes } from '@/nodes'
+import { NODE_CENTER_OFFSET } from '@/constants/nodeLayout'
 import AddNodeMenu from '@/components/AddNodeMenu'
 import OpenCVStatus from '@/components/OpenCVStatus'
 import elephantImg from '../asset/imagenet_elephant.jpg'
@@ -103,7 +104,7 @@ const initialEdges = [
 
 function FlowCanvas() {
     const nodeIdCounter = useRef(2)
-    const { getViewport, addNodes, setEdges, getEdges } = useReactFlow()
+    const { getViewport, addNodes, setEdges, getEdges, screenToFlowPosition } = useReactFlow()
 
     // Key fix: Use defaultNodes/defaultEdges for uncontrolled mode
     // allowing nodes to update themselves via useNodeOutput without fighting App state
@@ -125,15 +126,16 @@ function FlowCanvas() {
         [setEdges]
     )
 
-    const handleAddNode = useCallback((nodeType) => {
+    const handleAddNode = useCallback((nodeType, positionOverride) => {
         nodeIdCounter.current += 1
         const id = `${nodeType}-${nodeIdCounter.current}`
 
         const viewport = getViewport()
-        const position = {
-            x: (-viewport.x + 300 + Math.random() * 200) / viewport.zoom,
-            y: (-viewport.y + 200 + Math.random() * 100) / viewport.zoom,
-        }
+        const position =
+            positionOverride ?? {
+                x: (-viewport.x + 300 + Math.random() * 200) / viewport.zoom,
+                y: (-viewport.y + 200 + Math.random() * 100) / viewport.zoom,
+            }
 
         const newNode = {
             id,
@@ -145,12 +147,32 @@ function FlowCanvas() {
         addNodes(newNode)
     }, [getViewport, addNodes])
 
+    const onDragOver = useCallback((event) => {
+        event.preventDefault()
+        event.dataTransfer.dropEffect = 'move'
+    }, [])
+
+    const onDrop = useCallback((event) => {
+        event.preventDefault()
+        const nodeType = event.dataTransfer.getData('application/reactflow')
+        if (!nodeType) return
+
+        const dropPosition = screenToFlowPosition({ x: event.clientX, y: event.clientY })
+        const centeredPosition = {
+            x: dropPosition.x - NODE_CENTER_OFFSET.x,
+            y: dropPosition.y - NODE_CENTER_OFFSET.y,
+        }
+        handleAddNode(nodeType, centeredPosition)
+    }, [handleAddNode, screenToFlowPosition])
+
     return (
         <ReactFlow
             defaultNodes={initialNodes}
             defaultEdges={initialEdges}
             onConnect={onConnect}
             nodeTypes={nodeTypes}
+            onDrop={onDrop}
+            onDragOver={onDragOver}
             fitView
             className="bg-slate-50"
         >
