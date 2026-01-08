@@ -1,8 +1,8 @@
-import React, { useState, useCallback } from 'react'
+import React, { useState, useCallback, useMemo } from 'react'
 import { Panel } from 'reactflow'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
-import { PlusIcon, ImageIcon, PaletteIcon, BlendIcon, ScanLineIcon, LayersIcon, PencilIcon, RotateCw, Sun } from 'lucide-react'
+import { PlusIcon, ImageIcon, PaletteIcon, BlendIcon, ScanLineIcon, LayersIcon, PencilIcon, RotateCw, Sun, ChevronRight } from 'lucide-react'
 
 /**
  * Node definitions with metadata for the add menu
@@ -85,11 +85,28 @@ export const nodeDefinitions = [
  */
 function AddNodeMenu({ onAddNode }) {
     const [isOpen, setIsOpen] = useState(false)
+    const [activeCategory, setActiveCategory] = useState(null)
 
     const handleAddNode = useCallback((nodeType) => {
         onAddNode(nodeType)
         setIsOpen(false)
+        setActiveCategory(null)
     }, [onAddNode])
+
+    // Group nodes by category
+    const categories = useMemo(() => {
+        const groups = {}
+        nodeDefinitions.forEach(node => {
+            if (!groups[node.category]) {
+                groups[node.category] = []
+            }
+            groups[node.category].push(node)
+        })
+        return Object.entries(groups).map(([name, nodes]) => ({
+            name,
+            nodes
+        }))
+    }, [])
 
     return (
         <Panel position="top-right" className="!top-16 !right-4">
@@ -110,42 +127,69 @@ function AddNodeMenu({ onAddNode }) {
                     {/* Backdrop to close on click outside */}
                     <div
                         className="fixed inset-0 z-10"
-                        onClick={() => setIsOpen(false)}
+                        onClick={() => {
+                            setIsOpen(false)
+                            setActiveCategory(null)
+                        }}
                     />
 
-                    <Card className="absolute top-12 right-0 z-20 w-64 p-2 shadow-xl animate-in fade-in slide-in-from-top-2 duration-200">
-                        <div className="space-y-1">
-                            <p className="px-2 py-1 text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                                Available Nodes
-                            </p>
+                    <div className="absolute top-12 right-0 flex flex-row-reverse gap-2 items-start z-20">
+                        {/* Main Category Menu */}
+                        <Card className="w-48 p-2 shadow-xl animate-in fade-in slide-in-from-top-2 duration-200">
+                            <div className="space-y-1">
+                                <p className="px-2 py-1 text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                                    Categories
+                                </p>
 
-                            {nodeDefinitions.map((node) => {
-                                const Icon = node.icon
-                                return (
+                                {categories.map((category) => (
                                     <button
-                                        key={node.type}
-                                        onClick={() => handleAddNode(node.type)}
-                                        className="w-full flex items-start gap-3 p-3 rounded-lg hover:bg-accent/50 transition-colors text-left group"
+                                        key={category.name}
+                                        onMouseEnter={() => setActiveCategory(category.name)}
+                                        className={`w-full flex items-center justify-between p-2 rounded-lg text-left text-sm transition-colors ${
+                                            activeCategory === category.name
+                                            ? 'bg-accent text-accent-foreground'
+                                            : 'hover:bg-accent/50'
+                                        }`}
                                     >
-                                        <div className="p-2 rounded-md bg-primary/10 text-primary group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
-                                            <Icon className="w-4 h-4" />
-                                        </div>
-                                        <div className="flex-1 min-w-0">
-                                            <div className="flex items-center gap-2">
-                                                <span className="font-medium text-sm">{node.label}</span>
-                                                <span className="text-[10px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground">
-                                                    {node.category}
-                                                </span>
-                                            </div>
-                                            <p className="text-xs text-muted-foreground mt-0.5">
-                                                {node.description}
-                                            </p>
-                                        </div>
+                                        <span className="font-medium">{category.name}</span>
+                                        <ChevronRight className="w-4 h-4 opacity-50" />
                                     </button>
-                                )
-                            })}
-                        </div>
-                    </Card>
+                                ))}
+                            </div>
+                        </Card>
+
+                        {/* Submenu for Active Category */}
+                        {activeCategory && (
+                            <Card className="w-64 p-2 shadow-xl animate-in fade-in slide-in-from-right-2 duration-200">
+                                <div className="space-y-1">
+                                    <p className="px-2 py-1 text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                                        {activeCategory} Nodes
+                                    </p>
+
+                                    {categories.find(c => c.name === activeCategory)?.nodes.map((node) => {
+                                        const Icon = node.icon
+                                        return (
+                                            <button
+                                                key={node.type}
+                                                onClick={() => handleAddNode(node.type)}
+                                                className="w-full flex items-start gap-3 p-3 rounded-lg hover:bg-accent/50 transition-colors text-left group"
+                                            >
+                                                <div className="p-2 rounded-md bg-primary/10 text-primary group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
+                                                    <Icon className="w-4 h-4" />
+                                                </div>
+                                                <div className="flex-1 min-w-0">
+                                                    <div className="font-medium text-sm">{node.label}</div>
+                                                    <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">
+                                                        {node.description}
+                                                    </p>
+                                                </div>
+                                            </button>
+                                        )
+                                    })}
+                                </div>
+                            </Card>
+                        )}
+                    </div>
                 </>
             )}
         </Panel>
