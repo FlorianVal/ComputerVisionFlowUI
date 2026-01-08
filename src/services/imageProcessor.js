@@ -209,8 +209,13 @@ export async function processInvert(imageUrl, cv, { metadata } = {}) {
 
         // Copy result to imageData
         const dstData = new Uint8ClampedArray(dst.data)
-        for (let i = 0; i < dstData.length; i++) {
-            imageData.data[i] = dstData[i]
+        for (let i = 0; i < width * height; i++) {
+            const idx = i * 4
+            imageData.data[idx] = dstData[idx]         // R
+            imageData.data[idx + 1] = dstData[idx + 1] // G
+            imageData.data[idx + 2] = dstData[idx + 2] // B
+            // Preserve original alpha (imageData.data[idx + 3])
+            // because bitwise_not would invert alpha (255 -> 0) making it transparent
         }
 
         ctx.putImageData(imageData, 0, 0)
