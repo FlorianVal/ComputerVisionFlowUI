@@ -598,6 +598,59 @@ export async function processRotate(imageUrl, cv, { angle = 0, metadata } = {}) 
 }
 
 /**
+ * Process image by zooming in with a scale factor.
+ * @param {string} imageUrl - Input image URL
+ * @param {object} cv - OpenCV instance
+ * @param {object} options - Options
+ * @param {number} options.zoom - Zoom factor (>1 zooms in)
+ * @param {object} [options.metadata] - Input image metadata
+ * @returns {Promise<{outputUrl: string, metadata: object}>}
+ */
+export async function processZoom(imageUrl, cv, { zoom = 1.2, metadata } = {}) {
+    const { canvas, ctx, width, height, imageData } = await loadImageToCanvas(imageUrl, null)
+
+    let src = null
+    let resized = null
+    let cropped = null
+
+    try {
+        src = cv.imread(canvas)
+        resized = new cv.Mat()
+
+        const scale = Math.max(1, zoom)
+        const newWidth = Math.max(1, Math.round(width * scale))
+        const newHeight = Math.max(1, Math.round(height * scale))
+        const dsize = new cv.Size(newWidth, newHeight)
+
+        cv.resize(src, resized, dsize, 0, 0, cv.INTER_LINEAR)
+
+        const x = Math.max(0, Math.floor((newWidth - width) / 2))
+        const y = Math.max(0, Math.floor((newHeight - height) / 2))
+        const rect = new cv.Rect(x, y, width, height)
+        cropped = resized.roi(rect)
+
+        const croppedData = new Uint8ClampedArray(cropped.data)
+        for (let i = 0; i < croppedData.length; i++) {
+            imageData.data[i] = croppedData[i]
+        }
+
+        ctx.putImageData(imageData, 0, 0)
+
+        return {
+            outputUrl: canvas.toDataURL('image/png'),
+            metadata: metadata || {
+                colorSpace: 'RGB',
+                channels: 3
+            }
+        }
+    } finally {
+        if (src) src.delete()
+        if (cropped) cropped.delete()
+        if (resized) resized.delete()
+    }
+}
+
+/**
  * Adjust brightness and contrast of an image
  * @param {string} imageUrl - Input image URL
  * @param {object} cv - OpenCV instance
