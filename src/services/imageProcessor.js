@@ -603,35 +603,42 @@ export async function processRotate(imageUrl, cv, { angle = 0, metadata } = {}) 
  * @param {object} cv - OpenCV instance
  * @param {object} options - Options
  * @param {number} options.zoom - Zoom factor (>1 zooms in)
+ * @param {number} options.focusX - Horizontal focus point (0..1)
+ * @param {number} options.focusY - Vertical focus point (0..1)
  * @param {object} [options.metadata] - Input image metadata
  * @returns {Promise<{outputUrl: string, metadata: object}>}
  */
-export async function processZoom(imageUrl, cv, { zoom = 1.2, metadata } = {}) {
+export async function processZoom(imageUrl, cv, { zoom = 1.2, focusX = 0.5, focusY = 0.5, metadata } = {}) {
     const { canvas, ctx, width, height, imageData } = await loadImageToCanvas(imageUrl, null)
 
     let src = null
-    let resized = null
     let cropped = null
+    let resized = null
 
     try {
         src = cv.imread(canvas)
-        resized = new cv.Mat()
 
         const scale = Math.max(1, zoom)
-        const newWidth = Math.max(1, Math.round(width * scale))
-        const newHeight = Math.max(1, Math.round(height * scale))
-        const dsize = new cv.Size(newWidth, newHeight)
+        const cropWidth = Math.max(1, Math.round(width / scale))
+        const cropHeight = Math.max(1, Math.round(height / scale))
 
-        cv.resize(src, resized, dsize, 0, 0, cv.INTER_LINEAR)
+        const clampedFocusX = Math.min(1, Math.max(0, focusX))
+        const clampedFocusY = Math.min(1, Math.max(0, focusY))
 
-        const x = Math.max(0, Math.floor((newWidth - width) / 2))
-        const y = Math.max(0, Math.floor((newHeight - height) / 2))
-        const rect = new cv.Rect(x, y, width, height)
-        cropped = resized.roi(rect)
+        const maxX = Math.max(0, width - cropWidth)
+        const maxY = Math.max(0, height - cropHeight)
+        const x = Math.round(maxX * clampedFocusX)
+        const y = Math.round(maxY * clampedFocusY)
 
-        const croppedData = new Uint8ClampedArray(cropped.data)
-        for (let i = 0; i < croppedData.length; i++) {
-            imageData.data[i] = croppedData[i]
+        const rect = new cv.Rect(x, y, cropWidth, cropHeight)
+        cropped = src.roi(rect)
+        resized = new cv.Mat()
+        const dsize = new cv.Size(width, height)
+        cv.resize(cropped, resized, dsize, 0, 0, cv.INTER_LINEAR)
+
+        const resizedData = new Uint8ClampedArray(resized.data)
+        for (let i = 0; i < resizedData.length; i++) {
+            imageData.data[i] = resizedData[i]
         }
 
         ctx.putImageData(imageData, 0, 0)

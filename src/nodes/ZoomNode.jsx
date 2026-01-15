@@ -14,10 +14,19 @@ function ZoomNode({ id, data, selected }) {
     const updateOutput = useNodeOutput(id)
 
     const [zoom, setZoom] = useState(data.zoom ?? 1.2)
+    const [focusX, setFocusX] = useState(data.focusX ?? 0.5)
+    const [focusY, setFocusY] = useState(data.focusY ?? 0.5)
 
     const handleZoomChange = useCallback((value) => setZoom(value), [])
+    const handleFocusXChange = useCallback((value) => setFocusX(value), [])
+    const handleFocusYChange = useCallback((value) => setFocusY(value), [])
 
-    const processingOptions = useMemo(() => ({ zoom, metadata: inputData?.metadata }), [zoom, inputData])
+    const processingOptions = useMemo(() => ({
+        zoom,
+        focusX,
+        focusY,
+        metadata: inputData?.metadata
+    }), [zoom, focusX, focusY, inputData])
 
     const handleProcessingComplete = useCallback((result) => {
         updateOutput({ imageUrl: result.outputUrl, metadata: result.metadata })
@@ -28,19 +37,39 @@ function ZoomNode({ id, data, selected }) {
         inputImageUrl,
         processingOptions,
         handleProcessingComplete,
-        [zoom]
+        [zoom, focusX, focusY]
     )
 
     const optionsContent = (
-        <Slider
-            label="Zoom"
-            value={zoom}
-            onChange={handleZoomChange}
-            min={1}
-            max={3}
-            step={0.1}
-            showValue
-        />
+        <>
+            <Slider
+                label="Zoom"
+                value={zoom}
+                onChange={handleZoomChange}
+                min={1}
+                max={3}
+                step={0.1}
+                showValue
+            />
+            <Slider
+                label="Focus X"
+                value={focusX}
+                onChange={handleFocusXChange}
+                min={0}
+                max={1}
+                step={0.01}
+                showValue
+            />
+            <Slider
+                label="Focus Y"
+                value={focusY}
+                onChange={handleFocusYChange}
+                min={0}
+                max={1}
+                step={0.01}
+                showValue
+            />
+        </>
     )
 
     return (
