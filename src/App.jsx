@@ -85,6 +85,31 @@ const initialNodes = [
         position: { x: jitter(750), y: jitter(500, 150) },
         data: { fill: false },
     },
+    // Pipeline 3: Brightness -> Invert -> Rotate -> Canny
+    {
+        id: 'brightness-1',
+        type: 'brightness',
+        position: { x: jitter(400), y: jitter(900, 150) },
+        data: { brightness: 20, contrast: 1.2 },
+    },
+    {
+        id: 'invert-1',
+        type: 'invert',
+        position: { x: jitter(700), y: jitter(900, 150) },
+        data: {},
+    },
+    {
+        id: 'rotate-1',
+        type: 'rotate',
+        position: { x: jitter(1000), y: jitter(900, 150) },
+        data: { angle: 15 },
+    },
+    {
+        id: 'canny-1',
+        type: 'canny',
+        position: { x: jitter(1300), y: jitter(900, 150) },
+        data: { threshold1: 75, threshold2: 200 },
+    },
 ]
 
 const initialEdges = [
@@ -99,6 +124,12 @@ const initialEdges = [
     // Pipeline 2 Connections
     { id: 'e2-1', source: 'source-1', sourceHandle: 'image-out', target: 'thresh-2', targetHandle: 'image-in', animated: true },
     { id: 'e2-2', source: 'thresh-2', sourceHandle: 'image-out', target: 'contours-2', targetHandle: 'image-in', animated: true },
+
+    // Pipeline 3 Connections
+    { id: 'e3-1', source: 'source-1', sourceHandle: 'image-out', target: 'brightness-1', targetHandle: 'image-in', animated: true },
+    { id: 'e3-2', source: 'brightness-1', sourceHandle: 'image-out', target: 'invert-1', targetHandle: 'image-in', animated: true },
+    { id: 'e3-3', source: 'invert-1', sourceHandle: 'image-out', target: 'rotate-1', targetHandle: 'image-in', animated: true },
+    { id: 'e3-4', source: 'rotate-1', sourceHandle: 'image-out', target: 'canny-1', targetHandle: 'image-in', animated: true },
 ]
 
 function FlowCanvas() {
