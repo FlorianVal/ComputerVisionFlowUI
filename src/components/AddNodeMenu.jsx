@@ -2,7 +2,7 @@ import React, { useState, useCallback, useMemo } from 'react'
 import { Panel } from 'reactflow'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
-import { PlusIcon, ImageIcon, PaletteIcon, BlendIcon, ScanLineIcon, LayersIcon, PencilIcon, RotateCw, Sun, ChevronRight } from 'lucide-react'
+import { PlusIcon, ImageIcon, PaletteIcon, BlendIcon, ScanLineIcon, LayersIcon, PencilIcon, RotateCw, Sun, ChevronRight, ZoomIn } from 'lucide-react'
 
 /**
  * Node definitions with metadata for the add menu
@@ -62,6 +62,13 @@ export const nodeDefinitions = [
         label: 'Rotate',
         description: 'Rotate image by angle',
         icon: RotateCw,
+        category: 'Transform',
+    },
+    {
+        type: 'zoom',
+        label: 'Zoom',
+        description: 'Zoom in on the image',
+        icon: ZoomIn,
         category: 'Transform',
     },
     {

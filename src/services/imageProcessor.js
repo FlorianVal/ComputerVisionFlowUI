@@ -598,6 +598,66 @@ export async function processRotate(imageUrl, cv, { angle = 0, metadata } = {}) 
 }
 
 /**
+ * Process image by zooming in with a scale factor.
+ * @param {string} imageUrl - Input image URL
+ * @param {object} cv - OpenCV instance
+ * @param {object} options - Options
+ * @param {number} options.zoom - Zoom factor (>1 zooms in)
+ * @param {number} options.focusX - Horizontal focus point (0..1)
+ * @param {number} options.focusY - Vertical focus point (0..1)
+ * @param {object} [options.metadata] - Input image metadata
+ * @returns {Promise<{outputUrl: string, metadata: object}>}
+ */
+export async function processZoom(imageUrl, cv, { zoom = 1.2, focusX = 0.5, focusY = 0.5, metadata } = {}) {
+    const { canvas, ctx, width, height, imageData } = await loadImageToCanvas(imageUrl, null)
+
+    let src = null
+    let cropped = null
+    let resized = null
+
+    try {
+        src = cv.imread(canvas)
+
+        const scale = Math.max(1, zoom)
+        const cropWidth = Math.max(1, Math.round(width / scale))
+        const cropHeight = Math.max(1, Math.round(height / scale))
+
+        const clampedFocusX = Math.min(1, Math.max(0, focusX))
+        const clampedFocusY = Math.min(1, Math.max(0, focusY))
+
+        const maxX = Math.max(0, width - cropWidth)
+        const maxY = Math.max(0, height - cropHeight)
+        const x = Math.round(maxX * clampedFocusX)
+        const y = Math.round(maxY * clampedFocusY)
+
+        const rect = new cv.Rect(x, y, cropWidth, cropHeight)
+        cropped = src.roi(rect)
+        resized = new cv.Mat()
+        const dsize = new cv.Size(width, height)
+        cv.resize(cropped, resized, dsize, 0, 0, cv.INTER_LINEAR)
+
+        const resizedData = new Uint8ClampedArray(resized.data)
+        for (let i = 0; i < resizedData.length; i++) {
+            imageData.data[i] = resizedData[i]
+        }
+
+        ctx.putImageData(imageData, 0, 0)
+
+        return {
+            outputUrl: canvas.toDataURL('image/png'),
+            metadata: metadata || {
+                colorSpace: 'RGB',
+                channels: 3
+            }
+        }
+    } finally {
+        if (src) src.delete()
+        if (cropped) cropped.delete()
+        if (resized) resized.delete()
+    }
+}
+
+/**
  * Adjust brightness and contrast of an image
  * @param {string} imageUrl - Input image URL
  * @param {object} cv - OpenCV instance
