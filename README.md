@@ -76,6 +76,42 @@ VisioFlow is built with a modern, decoupled architecture:
 - `src/data/`: data validation and node communication protocols.
 - `src/components/ui/`: reusable design system components.
 
+## ➕ Adding a New Node
+
+To add a new node to VisioFlow, follow these steps:
+
+1. **Create the node component** in `src/nodes/MyNewNode.jsx`, extending the base node pattern.
+
+2. **Register the node** in `src/nodes/index.js`:
+   - Import the component:
+     ```js
+     import MyNewNode from './MyNewNode'
+     ```
+   - Add it to the `nodeTypes` registry (this is what ReactFlow uses to render it):
+     ```js
+     export const nodeTypes = {
+         // ...existing nodes...
+         myNewNode: MyNewNode,
+     }
+     ```
+   - Add it to the named exports at the bottom:
+     ```js
+     export { ..., MyNewNode }
+     ```
+
+3. **Add the node to the Add Node menu** in `src/components/AddNodeMenu.jsx` by appending an entry to the `nodeDefinitions` array:
+   ```js
+   {
+       type: 'myNewNode',       // must match the key used in nodeTypes
+       label: 'My New Node',
+       description: 'Short description of what this node does',
+       icon: SomeIcon,          // import from lucide-react
+       category: 'Filter',      // Input | Filter | Transform | Adjust
+   }
+   ```
+
+> **Important**: The `type` field in `nodeDefinitions` must exactly match the key registered in `nodeTypes`, otherwise the node will not render when added from the menu.
+
 ## 📄 License
 
 This project is licensed under the [MIT License](LICENSE).
