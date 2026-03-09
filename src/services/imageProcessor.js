@@ -598,6 +598,75 @@ export async function processRotate(imageUrl, cv, { angle = 0, metadata } = {}) 
 }
 
 /**
+ * Color space conversion map
+ * Each entry: { code: OpenCV constant name, from: expected input colorSpace, to: output colorSpace }
+ */
+const COLOR_CONVERSIONS = {
+    rgb2hsv:    { code: 'COLOR_RGB2HSV',    from: 'RGB',   to: 'HSV'   },
+    rgb2lab:    { code: 'COLOR_RGB2Lab',    from: 'RGB',   to: 'LAB'   },
+    rgb2ycrcb:  { code: 'COLOR_RGB2YCrCb', from: 'RGB',   to: 'YCrCb' },
+    hsv2rgb:    { code: 'COLOR_HSV2RGB',    from: 'HSV',   to: 'RGB'   },
+    lab2rgb:    { code: 'COLOR_Lab2RGB',    from: 'LAB',   to: 'RGB'   },
+    ycrcb2rgb:  { code: 'COLOR_YCrCb2RGB', from: 'YCrCb', to: 'RGB'   },
+}
+
+/**
+ * Convert image between color spaces using OpenCV
+ * @param {string} imageUrl - Input image URL
+ * @param {object} cv - OpenCV instance
+ * @param {object} options - Options
+ * @param {string} options.conversion - Conversion key (e.g. 'rgb2hsv')
+ * @param {object} [options.metadata] - Input image metadata (used to validate direction)
+ * @returns {Promise<{outputUrl: string, metadata: object}>}
+ */
+export async function processColorConvert(imageUrl, cv, { conversion = 'rgb2hsv', metadata } = {}) {
+    const conv = COLOR_CONVERSIONS[conversion]
+    if (!conv) throw new Error(`Unknown color space conversion: ${conversion}`)
+
+    // Validate that the input colorSpace matches what this conversion expects.
+    // When metadata is absent (node not yet connected) we assume RGB so forward
+    // conversions (rgb2*) succeed immediately without a spurious error.
+    const inputColorSpace = metadata?.colorSpace || 'RGB'
+    if (inputColorSpace !== conv.from) {
+        throw new Error(
+            `Conversion "${conversion}" expects ${conv.from} input but received ${inputColorSpace}. ` +
+            `Connect a node whose output is in ${conv.from} color space.`
+        )
+    }
+
+    const { canvas, ctx, width, height, imageData } = await loadImageToCanvas(imageUrl, null)
+
+    let src = null, rgb = null, dst = null, rgba = null
+
+    try {
+        src = cv.imread(canvas)   // CV_8UC4 (RGBA from canvas)
+        rgb = new cv.Mat()
+        dst = new cv.Mat()
+        rgba = new cv.Mat()
+
+        // RGBA → 3-channel (most cvtColor codes require 3-channel input)
+        cv.cvtColor(src, rgb, cv.COLOR_RGBA2RGB)
+        // Apply the chosen conversion
+        cv.cvtColor(rgb, dst, cv[conv.code])
+        // Back to RGBA so we can write to canvas
+        cv.cvtColor(dst, rgba, cv.COLOR_RGB2RGBA)
+
+        imageData.data.set(new Uint8ClampedArray(rgba.data))
+        ctx.putImageData(imageData, 0, 0)
+
+        return {
+            outputUrl: canvas.toDataURL('image/png'),
+            metadata: { colorSpace: conv.to, channels: 3 }
+        }
+    } finally {
+        if (src)  src.delete()
+        if (rgb)  rgb.delete()
+        if (dst)  dst.delete()
+        if (rgba) rgba.delete()
+    }
+}
+
+/**
  * Adjust brightness and contrast of an image
  * @param {string} imageUrl - Input image URL
  * @param {object} cv - OpenCV instance

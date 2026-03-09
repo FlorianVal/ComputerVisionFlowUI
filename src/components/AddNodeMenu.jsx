@@ -78,6 +78,13 @@ export const nodeDefinitions = [
         icon: PaletteIcon,
         category: 'Filter',
     },
+    {
+        type: 'colorConvert',
+        label: 'Color Convert',
+        description: 'Convert between RGB, HSV, LAB, and YCrCb color spaces',
+        icon: PaletteIcon,
+        category: 'Filter',
+    },
 ]
 
 /**
