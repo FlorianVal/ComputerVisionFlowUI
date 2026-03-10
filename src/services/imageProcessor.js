@@ -8,6 +8,12 @@
  * don't depend on React state themselves.
  */
 
+const COLOR_SPACE_TO_RGB = {
+    HSV: 'COLOR_HSV2RGB',
+    LAB: 'COLOR_Lab2RGB',
+    YCrCb: 'COLOR_YCrCb2RGB',
+}
+
 /**
  * Load an image URL into a canvas and return the canvas, context, and dimensions
  * @param {string} imageUrl - URL of the image to load
@@ -49,6 +55,68 @@ export function loadImageToCanvas(imageUrl, maxSize = null) {
 
         img.src = imageUrl
     })
+}
+
+export async function drawImagePreviewToCanvas({
+    image,
+    canvas,
+    cv,
+    isOpenCvLoaded,
+    maxSize = 200,
+}) {
+    if (!image?.imageUrl || !canvas) {
+        return
+    }
+
+    const { metadata = { colorSpace: 'RGB', channels: 3 } } = image
+    const { canvas: sourceCanvas, width, height, imageData } = await loadImageToCanvas(
+        image.imageUrl,
+        maxSize
+    )
+
+    const ctx = canvas.getContext('2d')
+    canvas.width = width
+    canvas.height = height
+
+    if (
+        metadata.colorSpace === 'RGB' ||
+        metadata.colorSpace === 'GRAY' ||
+        !COLOR_SPACE_TO_RGB[metadata.colorSpace]
+    ) {
+        ctx.clearRect(0, 0, width, height)
+        ctx.drawImage(sourceCanvas, 0, 0, width, height)
+        return
+    }
+
+    if (!isOpenCvLoaded || !cv) {
+        ctx.clearRect(0, 0, width, height)
+        ctx.drawImage(sourceCanvas, 0, 0, width, height)
+        return
+    }
+
+    let src = null
+    let rgb = null
+    let previewRgb = null
+    let previewRgba = null
+
+    try {
+        src = cv.imread(sourceCanvas)
+        rgb = new cv.Mat()
+        previewRgb = new cv.Mat()
+        previewRgba = new cv.Mat()
+
+        cv.cvtColor(src, rgb, cv.COLOR_RGBA2RGB)
+        cv.cvtColor(rgb, previewRgb, cv[COLOR_SPACE_TO_RGB[metadata.colorSpace]])
+        cv.cvtColor(previewRgb, previewRgba, cv.COLOR_RGB2RGBA)
+
+        imageData.data.set(new Uint8ClampedArray(previewRgba.data))
+        ctx.putImageData(imageData, 0, 0)
+    } finally {
+        if (src) src.delete()
+        if (rgb) rgb.delete()
+        if (previewRgb) previewRgb.delete()
+        if (previewRgba) previewRgba.delete()
+    }
 }
 
 /**
@@ -434,9 +502,10 @@ export async function processFindContours(imageUrl, cv, { fill = false } = {}) {
  * @param {object} options - Options
  * @param {Array<number[]>} options.ranges - Array of [min, max] arrays for each channel
  * @param {string} options.mode - 'select' (keep inside) or 'filter' (keep outside)
+ * @param {object} options.metadata - Input image metadata
  * @returns {Promise<{outputUrl: string, metadata: object}>}
  */
-export async function processThreshold(imageUrl, cv, { ranges = [[0, 255]], mode = 'select' } = {}) {
+export async function processThreshold(imageUrl, cv, { ranges = [[0, 255]], mode = 'select', metadata } = {}) {
     const { canvas, ctx, width, height, imageData } = await loadImageToCanvas(imageUrl, null)
 
     let src = null
@@ -527,7 +596,7 @@ export async function processThreshold(imageUrl, cv, { ranges = [[0, 255]], mode
         // Return original metadata (inferred)
         return {
             outputUrl: canvas.toDataURL('image/png'),
-            metadata: {
+            metadata: metadata || {
                 colorSpace: isGrayscale ? 'GRAY' : 'RGB',
                 channels: isGrayscale ? 1 : 3
             }
@@ -653,9 +722,10 @@ export async function processColorConvert(imageUrl, cv, { conversion = 'rgb2hsv'
 
         imageData.data.set(new Uint8ClampedArray(rgba.data))
         ctx.putImageData(imageData, 0, 0)
+        const outputUrl = canvas.toDataURL('image/png')
 
         return {
-            outputUrl: canvas.toDataURL('image/png'),
+            outputUrl,
             metadata: { colorSpace: conv.to, channels: 3 }
         }
     } finally {

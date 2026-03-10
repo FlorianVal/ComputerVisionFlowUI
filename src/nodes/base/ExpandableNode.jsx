@@ -14,7 +14,7 @@ export function ExpandableNode({
     inputs,
     outputs,
     selected,
-    imageUrl,
+    image,
     isProcessing,
     isWaitingForOpenCV,
     error,
@@ -39,7 +39,7 @@ export function ExpandableNode({
             inputs={inputs}
             outputs={outputs}
             selected={selected}
-            imageUrl={imageUrl}
+            image={image}
             isProcessing={isProcessing}
             isWaitingForOpenCV={isWaitingForOpenCV}
             error={error}
@@ -52,7 +52,6 @@ export function ExpandableNode({
             {/* Options Panel */}
             {options && (
                 <div className="pt-2 border-t border-border/50">
-                    {/* Expand/Collapse button */}
                     <button
                         onClick={toggleExpanded}
                         className={cn(
@@ -70,7 +69,6 @@ export function ExpandableNode({
                         />
                     </button>
 
-                    {/* Collapsible options content */}
                     <div
                         className={cn(
                             "overflow-hidden transition-all duration-200 ease-in-out",

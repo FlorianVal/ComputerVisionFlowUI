@@ -1,6 +1,6 @@
 import React, { memo, useState, useCallback, useMemo } from 'react'
 import { ExpandableNode } from '@/nodes/base'
-import { useNodeInput, useNodeOutput, DataTypes } from '@/data'
+import { useNodeInput, useNodeOutput, DataTypes, createImagePayload } from '@/data'
 import { useImageProcessor } from '@/hooks/useImageProcessor'
 import { processRotate } from '@/services/imageProcessor'
 import { Slider } from '@/components/ui/slider'
@@ -20,7 +20,12 @@ function RotateNode({ id, data, selected }) {
     const processingOptions = useMemo(() => ({ angle, metadata: inputData?.metadata }), [angle, inputData])
 
     const handleProcessingComplete = useCallback((result) => {
-        updateOutput({ imageUrl: result.outputUrl, metadata: result.metadata })
+        updateOutput({
+            image: createImagePayload({
+                imageUrl: result.outputUrl,
+                metadata: result.metadata,
+            })
+        })
     }, [updateOutput])
 
     const { isProcessing, error, isWaitingForOpenCV } = useImageProcessor(
@@ -50,7 +55,7 @@ function RotateNode({ id, data, selected }) {
             inputs={[{ id: 'image-in' }]}
             outputs={[{ id: 'image-out' }]}
             selected={selected}
-            imageUrl={data.imageUrl}
+            image={data.image}
             isProcessing={isProcessing}
             isWaitingForOpenCV={isWaitingForOpenCV}
             error={error}
