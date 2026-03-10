@@ -1,7 +1,8 @@
-import React, { memo, useState, useCallback, useMemo } from 'react'
+import React, { memo, useCallback, useMemo } from 'react'
 import { ExpandableNode } from '@/nodes/base'
 import { useNodeInput, useNodeOutput, DataTypes } from '@/data'
 import { useImageProcessor } from '@/hooks/useImageProcessor'
+import { useNodeConfig } from '@/hooks/useNodeConfig'
 import { processMorphology } from '@/services/imageProcessor'
 import { Slider } from '@/components/ui/slider'
 import { Label } from '@/components/ui/label'
@@ -12,33 +13,31 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
  * Uses OpenCV.js (required, no fallback)
  */
 function MorphologicalNode({ id, data, selected }) {
-    // Use the data hooks
     const { data: inputData, isConnected } = useNodeInput(id, 'image-in', DataTypes.IMAGE)
     const inputImageUrl = inputData?.imageUrl
     const updateOutput = useNodeOutput(id)
 
-    // Options state
-    const [operation, setOperation] = useState(data.operation ?? 'erode')
-    const [iterations, setIterations] = useState(data.iterations ?? 1)
+    // Config synced to node.data for export
+    const [config, setConfig] = useNodeConfig(id, {
+        operation: data.operation ?? 'erode',
+        iterations: data.iterations ?? 1,
+    })
+    const { operation, iterations } = config
 
-    // Handle operation change
     const handleOperationChange = useCallback((value) => {
-        setOperation(value)
-    }, [])
+        setConfig({ operation: value })
+    }, [setConfig])
 
-    // Handle iterations change
     const handleIterationsChange = useCallback((value) => {
-        setIterations(value)
-    }, [])
+        setConfig({ iterations: value })
+    }, [setConfig])
 
-    // Memoize options to avoid unnecessary reprocessing
     const processingOptions = useMemo(() => ({
         operation,
         iterations,
-        metadata: inputData?.metadata // Pass metadata through
+        metadata: inputData?.metadata
     }), [operation, iterations, inputData])
 
-    // Callback when processing completes
     const handleProcessingComplete = useCallback((result) => {
         updateOutput({
             imageUrl: result.outputUrl,
@@ -46,16 +45,14 @@ function MorphologicalNode({ id, data, selected }) {
         })
     }, [updateOutput])
 
-    // Use the image processor hook
     const { isProcessing, error, isWaitingForOpenCV } = useImageProcessor(
         processMorphology,
         inputImageUrl,
         processingOptions,
         handleProcessingComplete,
-        [operation, iterations] // Reprocess when options change
+        [operation, iterations]
     )
 
-    // Options content for the expandable panel
     const optionsContent = (
         <div className="space-y-4">
             <div className="space-y-2">

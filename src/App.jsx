@@ -1,9 +1,8 @@
-import React, { useCallback, useRef } from 'react'
+import React, { useCallback, useRef, useState } from 'react'
 import ReactFlow, {
     Controls,
     Background,
-    applyNodeChanges,
-    applyEdgeChanges,
+    Panel,
     addEdge,
     ReactFlowProvider,
     useReactFlow,
@@ -14,6 +13,7 @@ import { OpenCVProvider } from '@/contexts/OpenCVContext'
 import { nodeTypes } from '@/nodes'
 import AddNodeMenu from '@/components/AddNodeMenu'
 import OpenCVStatus from '@/components/OpenCVStatus'
+import ExportModal from '@/components/ExportModal'
 import elephantImg from '../asset/imagenet_elephant.jpg'
 
 // Helper to add some visual noise to node positions
@@ -134,7 +134,8 @@ const initialEdges = [
 
 function FlowCanvas() {
     const nodeIdCounter = useRef(2)
-    const { getViewport, addNodes, setEdges, getEdges } = useReactFlow()
+    const { getViewport, addNodes, setEdges, getNodes, getEdges } = useReactFlow()
+    const [showExport, setShowExport] = useState(false)
 
     // Key fix: Use defaultNodes/defaultEdges for uncontrolled mode
     // allowing nodes to update themselves via useNodeOutput without fighting App state
@@ -177,18 +178,39 @@ function FlowCanvas() {
     }, [getViewport, addNodes])
 
     return (
-        <ReactFlow
-            defaultNodes={initialNodes}
-            defaultEdges={initialEdges}
-            onConnect={onConnect}
-            nodeTypes={nodeTypes}
-            fitView
-            className="bg-slate-50"
-        >
-            <Background variant="dots" gap={16} size={1} />
-            <Controls />
-            <AddNodeMenu onAddNode={handleAddNode} />
-        </ReactFlow>
+        <>
+            <ReactFlow
+                defaultNodes={initialNodes}
+                defaultEdges={initialEdges}
+                onConnect={onConnect}
+                nodeTypes={nodeTypes}
+                fitView
+                className="bg-slate-50"
+            >
+                <Background variant="dots" gap={16} size={1} />
+                <Controls />
+                <AddNodeMenu onAddNode={handleAddNode} />
+                <Panel position="top-right" className="mt-12">
+                    <button
+                        onClick={() => setShowExport(true)}
+                        className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-md border bg-background/90 backdrop-blur-sm shadow-sm hover:bg-muted transition-colors"
+                    >
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <polyline points="16 18 22 12 16 6" /><polyline points="8 6 2 12 8 18" />
+                        </svg>
+                        Export Code
+                    </button>
+                </Panel>
+            </ReactFlow>
+
+            {showExport && (
+                <ExportModal
+                    nodes={getNodes()}
+                    edges={getEdges()}
+                    onClose={() => setShowExport(false)}
+                />
+            )}
+        </>
     )
 }
 

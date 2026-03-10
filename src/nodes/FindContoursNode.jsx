@@ -1,7 +1,8 @@
-import React, { memo, useState, useCallback, useMemo } from 'react'
+import React, { memo, useCallback, useMemo } from 'react'
 import { ExpandableNode } from '@/nodes/base'
 import { useNodeInput, useNodeOutput, DataTypes } from '@/data'
 import { useImageProcessor } from '@/hooks/useImageProcessor'
+import { useNodeConfig } from '@/hooks/useNodeConfig'
 import { processFindContours } from '@/services/imageProcessor'
 import { Label } from '@/components/ui/label'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
@@ -11,26 +12,26 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
  * Uses OpenCV.js (required, no fallback)
  */
 function FindContoursNode({ id, data, selected }) {
-    // Use the data hooks
     const { data: inputData, isConnected } = useNodeInput(id, 'image-in', DataTypes.IMAGE)
     const inputImageUrl = inputData?.imageUrl
     const updateOutput = useNodeOutput(id)
 
-    // Options state
-    // Store boolean as string for RadioGroup, or convert back and forth
-    const [mode, setMode] = useState(data.fill ? 'filled' : 'outline')
+    // Config synced to node.data for export
+    // Store fill as boolean in node.data; use a "mode" string locally for the RadioGroup
+    const [config, setConfig] = useNodeConfig(id, {
+        fill: data.fill ?? false,
+    })
+    const { fill } = config
+    const mode = fill ? 'filled' : 'outline'
 
-    // Handle mode change
     const handleModeChange = useCallback((value) => {
-        setMode(value)
-    }, [])
+        setConfig({ fill: value === 'filled' })
+    }, [setConfig])
 
-    // Memoize options to avoid unnecessary reprocessing
     const processingOptions = useMemo(() => ({
-        fill: mode === 'filled',
-    }), [mode])
+        fill,
+    }), [fill])
 
-    // Callback when processing completes
     const handleProcessingComplete = useCallback((result) => {
         updateOutput({
             imageUrl: result.outputUrl,
@@ -38,16 +39,14 @@ function FindContoursNode({ id, data, selected }) {
         })
     }, [updateOutput])
 
-    // Use the image processor hook
     const { isProcessing, error, isWaitingForOpenCV } = useImageProcessor(
         processFindContours,
         inputImageUrl,
         processingOptions,
         handleProcessingComplete,
-        [mode] // Reprocess when options change
+        [fill]
     )
 
-    // Options content for the expandable panel
     const optionsContent = (
         <div className="space-y-4">
             <div className="space-y-2">
