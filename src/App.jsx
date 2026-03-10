@@ -2,7 +2,6 @@ import React, { useCallback, useRef } from 'react'
 import ReactFlow, {
     Controls,
     Background,
-    Panel,
     addEdge,
     ReactFlowProvider,
     useReactFlow,
@@ -167,7 +166,7 @@ function FlowCanvas() {
         >
             <Background variant="dots" gap={16} size={1} />
             <Controls />
-            <Panel position="top-right" className="!top-16 !right-28">
+            <AddNodeMenu onAddNode={handleAddNode}>
                 <Button
                     type="button"
                     variant="destructive"
@@ -178,8 +177,7 @@ function FlowCanvas() {
                 >
                     <Trash2 className="h-4 w-4" />
                 </Button>
-            </Panel>
-            <AddNodeMenu onAddNode={handleAddNode} />
+            </AddNodeMenu>
         </ReactFlow>
     )
 }

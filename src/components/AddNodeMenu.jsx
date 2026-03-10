@@ -83,7 +83,7 @@ export const nodeDefinitions = [
 /**
  * AddNodeMenu - A floating menu to add new nodes to the canvas
  */
-function AddNodeMenu({ onAddNode }) {
+function AddNodeMenu({ onAddNode, children }) {
     const [isOpen, setIsOpen] = useState(false)
     const [activeCategory, setActiveCategory] = useState(null)
 
@@ -110,16 +110,20 @@ function AddNodeMenu({ onAddNode }) {
 
     return (
         <Panel position="top-right" className="!top-16 !right-4">
-            {/* Toggle Button */}
-            <Button
-                variant="default"
-                size="sm"
-                onClick={() => setIsOpen(!isOpen)}
-                className="shadow-lg hover:shadow-xl transition-all duration-200 gap-2"
-            >
-                <PlusIcon className="w-4 h-4" />
-                Add Node
-            </Button>
+            <div className="flex flex-col items-end gap-3">
+                {/* Toggle Button */}
+                <Button
+                    variant="default"
+                    size="sm"
+                    onClick={() => setIsOpen(!isOpen)}
+                    className="shadow-lg hover:shadow-xl transition-all duration-200 gap-2"
+                >
+                    <PlusIcon className="w-4 h-4" />
+                    Add Node
+                </Button>
+
+                {children}
+            </div>
 
             {/* Dropdown Menu */}
             {isOpen && (
