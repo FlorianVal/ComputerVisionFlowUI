@@ -26,6 +26,13 @@
  * }
  */
 
-export { DataTypes, DataSchemas, getTypeErrorMessage } from './types'
+export {
+    DataTypes,
+    DataSchemas,
+    createImageMetadata,
+    createImagePayload,
+    getTypeErrorMessage,
+    isImagePayload,
+} from './types'
 export { useNodeInput } from './useNodeInput'
 export { useNodeOutput } from './useNodeOutput'

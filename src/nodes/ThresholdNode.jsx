@@ -1,6 +1,6 @@
 import React, { memo, useState, useCallback, useMemo, useEffect } from 'react'
 import { ExpandableNode } from '@/nodes/base'
-import { useNodeInput, useNodeOutput, DataTypes } from '@/data'
+import { useNodeInput, useNodeOutput, DataTypes, createImagePayload } from '@/data'
 import { useImageProcessor } from '@/hooks/useImageProcessor'
 import { processThreshold } from '@/services/imageProcessor'
 import { DualSlider } from '@/components/ui/dual-slider'
@@ -63,15 +63,18 @@ function ThresholdNode({ id, data, selected }) {
         }
         return {
             ranges: effectiveRanges,
-            mode
+            mode,
+            metadata,
         }
-    }, [ranges, mode, channelCount])
+    }, [ranges, mode, channelCount, metadata])
 
     // Callback when processing completes
     const handleProcessingComplete = useCallback((result) => {
         updateOutput({
-            imageUrl: result.outputUrl,
-            metadata: result.metadata
+            image: createImagePayload({
+                imageUrl: result.outputUrl,
+                metadata: result.metadata,
+            })
         })
     }, [updateOutput])
 
@@ -133,7 +136,7 @@ function ThresholdNode({ id, data, selected }) {
             inputs={[{ id: 'image-in' }]}
             outputs={[{ id: 'image-out' }]}
             selected={selected}
-            imageUrl={data.imageUrl}
+            image={data.image}
             isProcessing={isProcessing}
             isWaitingForOpenCV={isWaitingForOpenCV}
             error={error}

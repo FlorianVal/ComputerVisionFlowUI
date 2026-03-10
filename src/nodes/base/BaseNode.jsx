@@ -3,13 +3,34 @@ import { createPortal } from 'react-dom'
 import { useReactFlow } from 'reactflow'
 import NodeWrapper from '@/components/NodeWrapper'
 import { NodeLoadingOverlay } from '@/components/NodeLoadingOverlay'
+import { useOpenCV } from '@/contexts/OpenCVContext'
+import { drawImagePreviewToCanvas } from '@/services/imageProcessor'
 import { Maximize2, X } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 /**
  * ImageModal - A simple portal-based modal for full-size image viewing
  */
-function ImageModal({ isOpen, onClose, imageUrl, title }) {
+function ImageModal({ isOpen, onClose, image, title }) {
+    const canvasRef = useRef(null)
+    const { cv, isLoaded } = useOpenCV()
+
+    useEffect(() => {
+        if (!isOpen || !image?.imageUrl || !canvasRef.current) return
+
+        const canvas = canvasRef.current
+
+        drawImagePreviewToCanvas({
+            image,
+            canvas,
+            cv,
+            isOpenCvLoaded: isLoaded,
+            maxSize: null,
+        }).catch((err) => {
+            console.error('[ImageModal] Failed to render preview:', err)
+        })
+    }, [isOpen, image, cv, isLoaded])
+
     if (!isOpen) return null
 
     return createPortal(
@@ -25,9 +46,9 @@ function ImageModal({ isOpen, onClose, imageUrl, title }) {
                     </button>
                 </div>
                 <div className="p-4 overflow-auto flex-1 flex items-center justify-center bg-muted/20">
-                    <img
-                        src={imageUrl}
-                        alt={title}
+                    <canvas
+                        ref={canvasRef}
+                        aria-label={title}
                         className="max-w-full max-h-[80vh] object-contain rounded shadow-sm"
                     />
                 </div>
@@ -55,18 +76,21 @@ export function BaseNode({
     selected,
     children,
     // Data props
-    imageUrl,
+    image,
     // State props
     isProcessing = false,
     isWaitingForOpenCV = false,
     error = null,
     isConnected = true,
+    showPreview = true,
     // Configuration
     className
 }) {
     const [isModalOpen, setIsModalOpen] = useState(false)
     const canvasRef = useRef(null)
     const { setNodes } = useReactFlow()
+    const { cv, isLoaded } = useOpenCV()
+    const imageUrl = image?.imageUrl || null
 
     // Handle node deletion
     const handleDelete = useCallback(() => {
@@ -78,19 +102,30 @@ export function BaseNode({
         if (!imageUrl || !canvasRef.current) return
 
         const canvas = canvasRef.current
-        const ctx = canvas.getContext('2d')
-        const img = new Image()
+        let isCancelled = false
 
-        img.onload = () => {
-            const maxSize = 200
-            const scale = Math.min(maxSize / img.width, maxSize / img.height, 1)
-            canvas.width = Math.floor(img.width * scale)
-            canvas.height = Math.floor(img.height * scale)
-            ctx.drawImage(img, 0, 0, canvas.width, canvas.height)
+        const renderPreview = async () => {
+            try {
+                await drawImagePreviewToCanvas({
+                    image,
+                    canvas,
+                    cv,
+                    isOpenCvLoaded: isLoaded,
+                    maxSize: 200,
+                })
+            } catch (err) {
+                if (!isCancelled) {
+                    console.error('[BaseNode] Failed to render preview:', err)
+                }
+            }
         }
 
-        img.src = imageUrl
-    }, [imageUrl])
+        renderPreview()
+
+        return () => {
+            isCancelled = true
+        }
+    }, [image, imageUrl, cv, isLoaded])
 
     return (
         <>
@@ -103,40 +138,47 @@ export function BaseNode({
                 className={cn("w-[220px]", className)}
             >
                 <div className="space-y-2">
-                    {/* Processing/Image Display Area */}
-                    <NodeLoadingOverlay
-                        isLoading={isProcessing}
-                        isWaiting={isWaitingForOpenCV}
-                    >
-                        <div className="relative w-full min-h-[100px] bg-muted rounded overflow-hidden flex items-center justify-center group">
-                            {error ? (
-                                <span className="text-xs text-destructive text-center px-2">
-                                    {error}
-                                </span>
-                            ) : imageUrl ? (
-                                <>
-                                    <canvas
-                                        ref={canvasRef}
-                                        className="max-w-full max-h-[150px] object-contain"
-                                    />
-                                    {/* Overlay Button */}
-                                    <div className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                        <button
-                                            onClick={() => setIsModalOpen(true)}
-                                            className="p-1.5 bg-background/80 hover:bg-background text-foreground rounded shadow-sm backdrop-blur-sm transition-colors border border-border"
-                                            title="View Full Size"
-                                        >
-                                            <Maximize2 className="w-3.5 h-3.5" />
-                                        </button>
-                                    </div>
-                                </>
-                            ) : (
-                                <span className="text-xs text-muted-foreground select-none">
-                                    {isConnected ? 'Waiting for input...' : 'No input connected'}
-                                </span>
-                            )}
+                    {showPreview && (
+                        <NodeLoadingOverlay
+                            isLoading={isProcessing}
+                            isWaiting={isWaitingForOpenCV}
+                        >
+                            <div className="relative w-full min-h-[100px] bg-muted rounded overflow-hidden flex items-center justify-center group">
+                                {error ? (
+                                    <span className="text-xs text-destructive text-center px-2">
+                                        {error}
+                                    </span>
+                                ) : imageUrl ? (
+                                    <>
+                                        <canvas
+                                            ref={canvasRef}
+                                            className="max-w-full max-h-[150px] object-contain"
+                                        />
+                                        {/* Overlay Button */}
+                                        <div className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                            <button
+                                                onClick={() => setIsModalOpen(true)}
+                                                className="p-1.5 bg-background/80 hover:bg-background text-foreground rounded shadow-sm backdrop-blur-sm transition-colors border border-border"
+                                                title="View Full Size"
+                                            >
+                                                <Maximize2 className="w-3.5 h-3.5" />
+                                            </button>
+                                        </div>
+                                    </>
+                                ) : (
+                                    <span className="text-xs text-muted-foreground select-none">
+                                        {isConnected ? 'Waiting for input...' : 'No input connected'}
+                                    </span>
+                                )}
+                            </div>
+                        </NodeLoadingOverlay>
+                    )}
+
+                    {!showPreview && error && (
+                        <div className="rounded bg-destructive/10 px-2 py-2 text-xs text-destructive">
+                            {error}
                         </div>
-                    </NodeLoadingOverlay>
+                    )}
 
                     {/* Additional Content (Controls/Options) */}
                     {children}
@@ -144,12 +186,14 @@ export function BaseNode({
             </NodeWrapper>
 
             {/* Full Size Modal */}
-            <ImageModal
-                isOpen={isModalOpen}
-                onClose={() => setIsModalOpen(false)}
-                imageUrl={imageUrl}
-                title={title}
-            />
+            {showPreview && (
+                <ImageModal
+                    isOpen={isModalOpen}
+                    onClose={() => setIsModalOpen(false)}
+                    image={image}
+                    title={title}
+                />
+            )}
         </>
     )
 }

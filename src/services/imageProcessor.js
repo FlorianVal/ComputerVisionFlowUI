@@ -8,6 +8,12 @@
  * don't depend on React state themselves.
  */
 
+const COLOR_SPACE_TO_RGB = {
+    HSV: 'COLOR_HSV2RGB',
+    LAB: 'COLOR_Lab2RGB',
+    YCrCb: 'COLOR_YCrCb2RGB',
+}
+
 /**
  * Load an image URL into a canvas and return the canvas, context, and dimensions
  * @param {string} imageUrl - URL of the image to load
@@ -49,6 +55,68 @@ export function loadImageToCanvas(imageUrl, maxSize = null) {
 
         img.src = imageUrl
     })
+}
+
+export async function drawImagePreviewToCanvas({
+    image,
+    canvas,
+    cv,
+    isOpenCvLoaded,
+    maxSize = 200,
+}) {
+    if (!image?.imageUrl || !canvas) {
+        return
+    }
+
+    const { metadata = { colorSpace: 'RGB', channels: 3 } } = image
+    const { canvas: sourceCanvas, width, height, imageData } = await loadImageToCanvas(
+        image.imageUrl,
+        maxSize
+    )
+
+    const ctx = canvas.getContext('2d')
+    canvas.width = width
+    canvas.height = height
+
+    if (
+        metadata.colorSpace === 'RGB' ||
+        metadata.colorSpace === 'GRAY' ||
+        !COLOR_SPACE_TO_RGB[metadata.colorSpace]
+    ) {
+        ctx.clearRect(0, 0, width, height)
+        ctx.drawImage(sourceCanvas, 0, 0, width, height)
+        return
+    }
+
+    if (!isOpenCvLoaded || !cv) {
+        ctx.clearRect(0, 0, width, height)
+        ctx.drawImage(sourceCanvas, 0, 0, width, height)
+        return
+    }
+
+    let src = null
+    let rgb = null
+    let previewRgb = null
+    let previewRgba = null
+
+    try {
+        src = cv.imread(sourceCanvas)
+        rgb = new cv.Mat()
+        previewRgb = new cv.Mat()
+        previewRgba = new cv.Mat()
+
+        cv.cvtColor(src, rgb, cv.COLOR_RGBA2RGB)
+        cv.cvtColor(rgb, previewRgb, cv[COLOR_SPACE_TO_RGB[metadata.colorSpace]])
+        cv.cvtColor(previewRgb, previewRgba, cv.COLOR_RGB2RGBA)
+
+        imageData.data.set(new Uint8ClampedArray(previewRgba.data))
+        ctx.putImageData(imageData, 0, 0)
+    } finally {
+        if (src) src.delete()
+        if (rgb) rgb.delete()
+        if (previewRgb) previewRgb.delete()
+        if (previewRgba) previewRgba.delete()
+    }
 }
 
 /**
@@ -434,9 +502,10 @@ export async function processFindContours(imageUrl, cv, { fill = false } = {}) {
  * @param {object} options - Options
  * @param {Array<number[]>} options.ranges - Array of [min, max] arrays for each channel
  * @param {string} options.mode - 'select' (keep inside) or 'filter' (keep outside)
+ * @param {object} options.metadata - Input image metadata
  * @returns {Promise<{outputUrl: string, metadata: object}>}
  */
-export async function processThreshold(imageUrl, cv, { ranges = [[0, 255]], mode = 'select' } = {}) {
+export async function processThreshold(imageUrl, cv, { ranges = [[0, 255]], mode = 'select', metadata } = {}) {
     const { canvas, ctx, width, height, imageData } = await loadImageToCanvas(imageUrl, null)
 
     let src = null
@@ -527,7 +596,7 @@ export async function processThreshold(imageUrl, cv, { ranges = [[0, 255]], mode
         // Return original metadata (inferred)
         return {
             outputUrl: canvas.toDataURL('image/png'),
-            metadata: {
+            metadata: metadata || {
                 colorSpace: isGrayscale ? 'GRAY' : 'RGB',
                 channels: isGrayscale ? 1 : 3
             }
@@ -594,6 +663,76 @@ export async function processRotate(imageUrl, cv, { angle = 0, metadata } = {}) 
         if (src) src.delete()
         if (dst) dst.delete()
         if (M) M.delete()
+    }
+}
+
+/**
+ * Color space conversion map
+ * Each entry: { code: OpenCV constant name, from: expected input colorSpace, to: output colorSpace }
+ */
+const COLOR_CONVERSIONS = {
+    rgb2hsv:    { code: 'COLOR_RGB2HSV',    from: 'RGB',   to: 'HSV'   },
+    rgb2lab:    { code: 'COLOR_RGB2Lab',    from: 'RGB',   to: 'LAB'   },
+    rgb2ycrcb:  { code: 'COLOR_RGB2YCrCb', from: 'RGB',   to: 'YCrCb' },
+    hsv2rgb:    { code: 'COLOR_HSV2RGB',    from: 'HSV',   to: 'RGB'   },
+    lab2rgb:    { code: 'COLOR_Lab2RGB',    from: 'LAB',   to: 'RGB'   },
+    ycrcb2rgb:  { code: 'COLOR_YCrCb2RGB', from: 'YCrCb', to: 'RGB'   },
+}
+
+/**
+ * Convert image between color spaces using OpenCV
+ * @param {string} imageUrl - Input image URL
+ * @param {object} cv - OpenCV instance
+ * @param {object} options - Options
+ * @param {string} options.conversion - Conversion key (e.g. 'rgb2hsv')
+ * @param {object} [options.metadata] - Input image metadata (used to validate direction)
+ * @returns {Promise<{outputUrl: string, metadata: object}>}
+ */
+export async function processColorConvert(imageUrl, cv, { conversion = 'rgb2hsv', metadata } = {}) {
+    const conv = COLOR_CONVERSIONS[conversion]
+    if (!conv) throw new Error(`Unknown color space conversion: ${conversion}`)
+
+    // Validate that the input colorSpace matches what this conversion expects.
+    // When metadata is absent (node not yet connected) we assume RGB so forward
+    // conversions (rgb2*) succeed immediately without a spurious error.
+    const inputColorSpace = metadata?.colorSpace || 'RGB'
+    if (inputColorSpace !== conv.from) {
+        throw new Error(
+            `Conversion "${conversion}" expects ${conv.from} input but received ${inputColorSpace}. ` +
+            `Connect a node whose output is in ${conv.from} color space.`
+        )
+    }
+
+    const { canvas, ctx, width, height, imageData } = await loadImageToCanvas(imageUrl, null)
+
+    let src = null, rgb = null, dst = null, rgba = null
+
+    try {
+        src = cv.imread(canvas)   // CV_8UC4 (RGBA from canvas)
+        rgb = new cv.Mat()
+        dst = new cv.Mat()
+        rgba = new cv.Mat()
+
+        // RGBA → 3-channel (most cvtColor codes require 3-channel input)
+        cv.cvtColor(src, rgb, cv.COLOR_RGBA2RGB)
+        // Apply the chosen conversion
+        cv.cvtColor(rgb, dst, cv[conv.code])
+        // Back to RGBA so we can write to canvas
+        cv.cvtColor(dst, rgba, cv.COLOR_RGB2RGBA)
+
+        imageData.data.set(new Uint8ClampedArray(rgba.data))
+        ctx.putImageData(imageData, 0, 0)
+        const outputUrl = canvas.toDataURL('image/png')
+
+        return {
+            outputUrl,
+            metadata: { colorSpace: conv.to, channels: 3 }
+        }
+    } finally {
+        if (src)  src.delete()
+        if (rgb)  rgb.delete()
+        if (dst)  dst.delete()
+        if (rgba) rgba.delete()
     }
 }
 

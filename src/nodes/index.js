@@ -8,6 +8,7 @@ import ThresholdNode from './ThresholdNode'
 import RotateNode from './RotateNode'
 import BrightnessNode from './BrightnessNode'
 import InvertNode from './InvertNode'
+import ColorConvertNode from './ColorConvertNode'
 
 // Node type registry for React Flow
 export const nodeTypes = {
@@ -21,7 +22,8 @@ export const nodeTypes = {
     rotate: RotateNode,
     brightness: BrightnessNode,
     invert: InvertNode,
+    colorConvert: ColorConvertNode,
 }
 
-export { ImageSourceNode, GrayscaleNode, BlurNode, CannyNode, MorphologicalNode, FindContoursNode, ThresholdNode, RotateNode, BrightnessNode, InvertNode }
+export { ImageSourceNode, GrayscaleNode, BlurNode, CannyNode, MorphologicalNode, FindContoursNode, ThresholdNode, RotateNode, BrightnessNode, InvertNode, ColorConvertNode }
 

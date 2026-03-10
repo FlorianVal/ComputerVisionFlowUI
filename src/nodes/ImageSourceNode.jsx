@@ -2,7 +2,7 @@ import React, { useState, useCallback, memo, useRef } from 'react'
 import { useReactFlow } from 'reactflow'
 import NodeWrapper from '@/components/NodeWrapper'
 import { Button } from '@/components/ui/button'
-import { useNodeOutput } from '@/data'
+import { createImagePayload, useNodeOutput } from '@/data'
 import { ImagePlus } from 'lucide-react'
 
 /**
@@ -10,8 +10,9 @@ import { ImagePlus } from 'lucide-react'
  * Outputs the image data URL to connected nodes
  */
 function ImageSourceNode({ id, data, selected }) {
-    const [imageUrl, setImageUrl] = useState(data.imageUrl || null)
-    const [imageName, setImageName] = useState(data.imageName || '')
+    const initialImage = data.image || null
+    const [imageUrl, setImageUrl] = useState(initialImage?.imageUrl || data.imageUrl || null)
+    const [imageName, setImageName] = useState(initialImage?.imageName || data.imageName || '')
     const updateOutput = useNodeOutput(id)
     const fileInputRef = useRef(null)
     const { setNodes } = useReactFlow()
@@ -49,14 +50,12 @@ function ImageSourceNode({ id, data, selected }) {
 
             // Update node data to propagate to connected nodes with dimensions
             updateOutput({
-                imageUrl: url,
-                imageName: file.name,
-                width: img.width,
-                height: img.height,
-                metadata: {
-                    colorSpace: 'RGB',
-                    channels: 3
-                }
+                image: createImagePayload({
+                    imageUrl: url,
+                    imageName: file.name,
+                    width: img.width,
+                    height: img.height,
+                })
             })
         }
         img.onerror = () => {
@@ -67,33 +66,30 @@ function ImageSourceNode({ id, data, selected }) {
 
     // Effect to output initial data if provided from defaultNodes
     React.useEffect(() => {
-        if (data.imageUrl && !data.width) {
+        const bootImage = data.image || (data.imageUrl ? createImagePayload({
+            imageUrl: data.imageUrl,
+            imageName: data.imageName || 'Initial Image',
+            width: data.width,
+            height: data.height,
+        }) : null)
+
+        if (bootImage?.imageUrl && !bootImage.width) {
             // Need to load to get dimensions if only URL provided
             const img = new Image()
             img.onload = () => {
                 updateOutput({
-                    imageUrl: data.imageUrl,
-                    imageName: data.imageName || 'Initial Image',
-                    width: img.width,
-                    height: img.height,
-                    metadata: {
-                        colorSpace: 'RGB',
-                        channels: 3
-                    }
+                    image: createImagePayload({
+                        ...bootImage,
+                        width: img.width,
+                        height: img.height,
+                    })
                 })
             }
-            img.src = data.imageUrl
-        } else if (data.imageUrl) {
+            img.src = bootImage.imageUrl
+        } else if (bootImage?.imageUrl) {
             // Already have everything
             updateOutput({
-                imageUrl: data.imageUrl,
-                imageName: data.imageName || 'Initial Image',
-                width: data.width,
-                height: data.height,
-                metadata: {
-                    colorSpace: 'RGB',
-                    channels: 3
-                }
+                image: createImagePayload(bootImage)
             })
         }
     }, []) // Run once on mount

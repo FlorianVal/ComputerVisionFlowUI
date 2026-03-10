@@ -2,22 +2,32 @@ import React, { memo, useState, useCallback, useMemo } from 'react'
 import { ExpandableNode } from '@/nodes/base'
 import { useNodeInput, useNodeOutput, DataTypes, createImagePayload } from '@/data'
 import { useImageProcessor } from '@/hooks/useImageProcessor'
-import { processRotate } from '@/services/imageProcessor'
-import { Slider } from '@/components/ui/slider'
+import { processColorConvert } from '@/services/imageProcessor'
+import { Select } from '@/components/ui/select'
+
+const conversionOptions = [
+    { value: 'rgb2hsv',   label: 'RGB → HSV'   },
+    { value: 'rgb2lab',   label: 'RGB → LAB'   },
+    { value: 'rgb2ycrcb', label: 'RGB → YCrCb' },
+    { value: 'hsv2rgb',   label: 'HSV → RGB'   },
+    { value: 'lab2rgb',   label: 'LAB → RGB'   },
+    { value: 'ycrcb2rgb', label: 'YCrCb → RGB' },
+]
 
 /**
- * RotateNode - Rotates input image by a configurable angle
+ * ColorConvertNode - Convert image between color spaces (RGB ↔ HSV / LAB / YCrCb)
+ * Uses OpenCV.js (required, no fallback)
  */
-function RotateNode({ id, data, selected }) {
+function ColorConvertNode({ id, data, selected }) {
     const { data: inputData, isConnected } = useNodeInput(id, 'image-in', DataTypes.IMAGE)
-    const inputImageUrl = inputData?.imageUrl
     const updateOutput = useNodeOutput(id)
 
-    const [angle, setAngle] = useState(data.angle ?? 0)
+    const [conversion, setConversion] = useState(data.conversion ?? 'rgb2hsv')
 
-    const handleAngleChange = useCallback((v) => setAngle(v), [])
-
-    const processingOptions = useMemo(() => ({ angle, metadata: inputData?.metadata }), [angle, inputData])
+    const processingOptions = useMemo(() => ({
+        conversion,
+        metadata: inputData?.metadata,
+    }), [conversion, inputData])
 
     const handleProcessingComplete = useCallback((result) => {
         updateOutput({
@@ -29,29 +39,26 @@ function RotateNode({ id, data, selected }) {
     }, [updateOutput])
 
     const { isProcessing, error, isWaitingForOpenCV } = useImageProcessor(
-        processRotate,
-        inputImageUrl,
+        processColorConvert,
+        inputData?.imageUrl,
         processingOptions,
         handleProcessingComplete,
-        [angle]
+        [conversion]
     )
 
     const optionsContent = (
-        <Slider
-            label="Angle"
-            value={angle}
-            onChange={handleAngleChange}
-            min={-180}
-            max={180}
-            step={1}
-            showValue
+        <Select
+            label="Conversion"
+            value={conversion}
+            onChange={setConversion}
+            options={conversionOptions}
         />
     )
 
     return (
         <ExpandableNode
             id={id}
-            title="Rotate"
+            title="Color Convert"
             inputs={[{ id: 'image-in' }]}
             outputs={[{ id: 'image-out' }]}
             selected={selected}
@@ -60,10 +67,11 @@ function RotateNode({ id, data, selected }) {
             isWaitingForOpenCV={isWaitingForOpenCV}
             error={error}
             isConnected={isConnected}
+            showPreview={false}
             options={optionsContent}
             className="w-[220px]"
         />
     )
 }
 
-export default memo(RotateNode)
+export default memo(ColorConvertNode)
