@@ -19,6 +19,7 @@ export function ExpandableNode({
     isWaitingForOpenCV,
     error,
     isConnected,
+    showPreview,
     className,
 
     // Expandable props
@@ -44,6 +45,7 @@ export function ExpandableNode({
             isWaitingForOpenCV={isWaitingForOpenCV}
             error={error}
             isConnected={isConnected}
+            showPreview={showPreview}
             className={className}
         >
             {/* Pass through children (if any specific non-option controls exist) */}

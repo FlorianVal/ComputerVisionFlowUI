@@ -67,6 +67,7 @@ function ColorConvertNode({ id, data, selected }) {
             isWaitingForOpenCV={isWaitingForOpenCV}
             error={error}
             isConnected={isConnected}
+            showPreview={false}
             options={optionsContent}
             className="w-[220px]"
         />
