@@ -2,8 +2,6 @@ import React, { useCallback, useRef } from 'react'
 import ReactFlow, {
     Controls,
     Background,
-    applyNodeChanges,
-    applyEdgeChanges,
     addEdge,
     ReactFlowProvider,
     useReactFlow,
@@ -14,7 +12,9 @@ import { OpenCVProvider } from '@/contexts/OpenCVContext'
 import { nodeTypes } from '@/nodes'
 import AddNodeMenu from '@/components/AddNodeMenu'
 import OpenCVStatus from '@/components/OpenCVStatus'
+import { Button } from '@/components/ui/button'
 import elephantImg from '../asset/imagenet_elephant.jpg'
+import { Trash2 } from 'lucide-react'
 
 // Helper to add some visual noise to node positions
 const jitter = (val, range = 20) => val + (Math.random() - 0.5) * range
@@ -134,7 +134,7 @@ const initialEdges = [
 
 function FlowCanvas() {
     const nodeIdCounter = useRef(2)
-    const { getViewport, addNodes, setEdges, getEdges } = useReactFlow()
+    const { getViewport, addNodes, setEdges, setNodes } = useReactFlow()
 
     // Key fix: Use defaultNodes/defaultEdges for uncontrolled mode
     // allowing nodes to update themselves via useNodeOutput without fighting App state
@@ -176,6 +176,16 @@ function FlowCanvas() {
         addNodes(newNode)
     }, [getViewport, addNodes])
 
+    const handleClearCanvas = useCallback(() => {
+        const confirmed = window.confirm(
+            'Clear the canvas and remove all nodes and connections?'
+        )
+        if (!confirmed) return
+        setNodes([])
+        setEdges([])
+        nodeIdCounter.current = 0
+    }, [setNodes, setEdges])
+
     return (
         <ReactFlow
             defaultNodes={initialNodes}
@@ -187,7 +197,18 @@ function FlowCanvas() {
         >
             <Background variant="dots" gap={16} size={1} />
             <Controls />
-            <AddNodeMenu onAddNode={handleAddNode} />
+            <AddNodeMenu onAddNode={handleAddNode}>
+                <Button
+                    type="button"
+                    variant="destructive"
+                    size="icon"
+                    onClick={handleClearCanvas}
+                    className="h-10 w-10 rounded-full shadow-lg hover:shadow-xl"
+                    aria-label="Clear canvas"
+                >
+                    <Trash2 className="h-4 w-4" />
+                </Button>
+            </AddNodeMenu>
         </ReactFlow>
     )
 }
