@@ -2,7 +2,8 @@ import React, { useState, useCallback, useMemo } from 'react'
 import { Panel } from 'reactflow'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
-import { PlusIcon, ImageIcon, PaletteIcon, BlendIcon, ScanLineIcon, LayersIcon, PencilIcon, RotateCw, Sun, ChevronRight } from 'lucide-react'
+import { Separator } from '@/components/ui/separator'
+import { PlusIcon, ImageIcon, PaletteIcon, BlendIcon, ScanLineIcon, LayersIcon, PencilIcon, RotateCw, Sun, ChevronRight, Code2, Trash2 } from 'lucide-react'
 
 /**
  * Node definitions with metadata for the add menu
@@ -88,9 +89,9 @@ export const nodeDefinitions = [
 ]
 
 /**
- * AddNodeMenu - A floating menu to add new nodes to the canvas
+ * AddNodeMenu - A floating toolbar with canvas actions and a node picker
  */
-function AddNodeMenu({ onAddNode, children }) {
+function AddNodeMenu({ onAddNode, onExportCode, onClearCanvas }) {
     const [isOpen, setIsOpen] = useState(false)
     const [activeCategory, setActiveCategory] = useState(null)
 
@@ -117,19 +118,46 @@ function AddNodeMenu({ onAddNode, children }) {
 
     return (
         <Panel position="top-right" className="!top-16 !right-4">
-            <div className="flex flex-col items-end gap-3">
-                {/* Toggle Button */}
+            <div className="flex flex-col items-stretch gap-1 w-36">
+                {/* Add Node */}
                 <Button
                     variant="default"
                     size="sm"
                     onClick={() => setIsOpen(!isOpen)}
-                    className="shadow-lg hover:shadow-xl transition-all duration-200 gap-2"
+                    className="shadow-lg hover:shadow-xl transition-all duration-200 gap-2 justify-start"
                 >
-                    <PlusIcon className="w-4 h-4" />
+                    <PlusIcon className="w-4 h-4 shrink-0" />
                     Add Node
                 </Button>
 
-                {children}
+                {/* Export Code */}
+                {onExportCode && (
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={onExportCode}
+                        className="gap-2 justify-start"
+                    >
+                        <Code2 className="w-4 h-4 shrink-0" />
+                        Export Code
+                    </Button>
+                )}
+
+                {/* Separator + Clear Canvas */}
+                {onClearCanvas && (
+                    <>
+                        <Separator className="my-0.5" />
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={onClearCanvas}
+                            className="gap-2 justify-start text-destructive hover:text-destructive hover:bg-destructive/10"
+                        >
+                            <Trash2 className="w-4 h-4 shrink-0" />
+                            Clear Canvas
+                        </Button>
+                    </>
+                )}
             </div>
 
             {/* Dropdown Menu */}

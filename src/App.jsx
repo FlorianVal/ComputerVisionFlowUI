@@ -2,7 +2,6 @@ import React, { useCallback, useRef, useState } from 'react'
 import ReactFlow, {
     Controls,
     Background,
-    Panel,
     addEdge,
     ReactFlowProvider,
     useReactFlow,
@@ -14,9 +13,7 @@ import { nodeTypes } from '@/nodes'
 import AddNodeMenu from '@/components/AddNodeMenu'
 import OpenCVStatus from '@/components/OpenCVStatus'
 import ExportModal from '@/components/ExportModal'
-import { Button } from '@/components/ui/button'
 import elephantImg from '../asset/imagenet_elephant.jpg'
-import { Trash2 } from 'lucide-react'
 
 // Helper to add some visual noise to node positions
 const jitter = (val, range = 20) => val + (Math.random() - 0.5) * range
@@ -201,29 +198,11 @@ function FlowCanvas() {
             >
                 <Background variant="dots" gap={16} size={1} />
                 <Controls />
-                <AddNodeMenu onAddNode={handleAddNode}>
-                    <Button
-                        type="button"
-                        variant="destructive"
-                        size="icon"
-                        onClick={handleClearCanvas}
-                        className="h-10 w-10 rounded-full shadow-lg hover:shadow-xl"
-                        aria-label="Clear canvas"
-                    >
-                        <Trash2 className="h-4 w-4" />
-                    </Button>
-                </AddNodeMenu>
-                <Panel position="top-right" className="!top-28 !right-4">
-                    <button
-                        onClick={() => setShowExport(true)}
-                        className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-md border bg-background/90 backdrop-blur-sm shadow-sm hover:bg-muted transition-colors"
-                    >
-                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                            <polyline points="16 18 22 12 16 6" /><polyline points="8 6 2 12 8 18" />
-                        </svg>
-                        Export Code
-                    </button>
-                </Panel>
+                <AddNodeMenu
+                    onAddNode={handleAddNode}
+                    onExportCode={() => setShowExport(true)}
+                    onClearCanvas={handleClearCanvas}
+                />
             </ReactFlow>
 
             {showExport && (
