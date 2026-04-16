@@ -1,9 +1,9 @@
-import React, { useState, useCallback, useMemo } from 'react'
+import React, { useState, useCallback, useMemo, useRef } from 'react'
 import { Panel } from 'reactflow'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
-import { PlusIcon, ImageIcon, PaletteIcon, BlendIcon, ScanLineIcon, LayersIcon, PencilIcon, RotateCw, Sun, ChevronRight, ChevronLeft, Code2, Trash2 } from 'lucide-react'
+import { PlusIcon, ImageIcon, PaletteIcon, BlendIcon, ScanLineIcon, LayersIcon, PencilIcon, RotateCw, Sun, ChevronRight, Code2, Trash2 } from 'lucide-react'
 
 /**
  * Node definitions with metadata for the add menu
@@ -94,7 +94,19 @@ export const nodeDefinitions = [
 function AddNodeMenu({ onAddNode, onExportCode, onClearCanvas }) {
     const [isOpen, setIsOpen] = useState(false)
     const [activeCategory, setActiveCategory] = useState(null)
-    const [collapsed, setCollapsed] = useState(false)
+    const [hovered, setHovered] = useState(false)
+    const leaveTimer = useRef(null)
+
+    const expanded = hovered || isOpen
+
+    const handleMouseEnter = useCallback(() => {
+        clearTimeout(leaveTimer.current)
+        setHovered(true)
+    }, [])
+
+    const handleMouseLeave = useCallback(() => {
+        leaveTimer.current = setTimeout(() => setHovered(false), 200)
+    }, [])
 
     const handleAddNode = useCallback((nodeType) => {
         onAddNode(nodeType)
@@ -119,136 +131,148 @@ function AddNodeMenu({ onAddNode, onExportCode, onClearCanvas }) {
 
     return (
         <Panel position="top-right" className="!top-16 !right-4">
-            <div className={`flex flex-col items-stretch gap-1 bg-background/95 backdrop-blur-sm border rounded-lg shadow-lg p-1.5 transition-all duration-200 ${collapsed ? 'w-9' : 'w-36'}`}>
-
-                {/* Collapse toggle */}
-                <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => { setCollapsed(c => !c); setIsOpen(false) }}
-                    className="gap-2 justify-center px-0 text-muted-foreground hover:text-foreground"
-                    title={collapsed ? 'Expand menu' : 'Collapse menu'}
-                >
-                    {collapsed ? <ChevronLeft className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
-                </Button>
-
-                <Separator className="my-0.5" />
-
-                {/* Add Node */}
-                <Button
-                    variant="default"
-                    size="sm"
-                    onClick={() => setIsOpen(!isOpen)}
-                    className="transition-all duration-200 gap-2 justify-start px-2"
-                    title="Add Node"
-                >
-                    <PlusIcon className="w-4 h-4 shrink-0" />
-                    {!collapsed && 'Add Node'}
-                </Button>
-
-                {/* Export Code */}
-                {onExportCode && (
-                    <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={onExportCode}
-                        className="gap-2 justify-start px-2"
-                        title="Export Code"
+            <div
+                onMouseEnter={handleMouseEnter}
+                onMouseLeave={handleMouseLeave}
+                className="relative"
+            >
+                {/* Toolbar container */}
+                <div className={`
+                    flex bg-background/95 backdrop-blur-sm border rounded-lg shadow-lg
+                    transition-all duration-200 overflow-hidden
+                    ${expanded
+                        ? 'flex-col items-stretch gap-1 p-1.5 w-[152px]'
+                        : 'flex-col items-center gap-0.5 p-1 w-10'
+                    }
+                `}>
+                    {/* Add Node */}
+                    <button
+                        onClick={() => setIsOpen(!isOpen)}
+                        title="Add Node"
+                        className={`
+                            inline-flex items-center rounded-md font-medium transition-colors
+                            bg-primary text-primary-foreground hover:bg-primary/90
+                            ${expanded
+                                ? 'h-8 gap-2 px-3 text-sm justify-start'
+                                : 'h-8 w-8 justify-center'
+                            }
+                        `}
                     >
-                        <Code2 className="w-4 h-4 shrink-0" />
-                        {!collapsed && 'Export Code'}
-                    </Button>
-                )}
+                        <PlusIcon className="w-4 h-4 shrink-0" />
+                        {expanded && <span>Add Node</span>}
+                    </button>
 
-                {/* Clear Canvas */}
-                {onClearCanvas && (
-                    <>
-                        <Separator className="my-0.5" />
-                        <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={onClearCanvas}
-                            className="gap-2 justify-start px-2 text-destructive hover:text-destructive hover:bg-destructive/10"
-                            title="Clear Canvas"
+                    {/* Export Code */}
+                    {onExportCode && (
+                        <button
+                            onClick={onExportCode}
+                            title="Export Code"
+                            className={`
+                                inline-flex items-center rounded-md font-medium transition-colors
+                                border border-input bg-background hover:bg-accent hover:text-accent-foreground
+                                ${expanded
+                                    ? 'h-8 gap-2 px-3 text-sm justify-start'
+                                    : 'h-8 w-8 justify-center'
+                                }
+                            `}
                         >
-                            <Trash2 className="w-4 h-4 shrink-0" />
-                            {!collapsed && 'Clear Canvas'}
-                        </Button>
+                            <Code2 className="w-4 h-4 shrink-0" />
+                            {expanded && <span>Export Code</span>}
+                        </button>
+                    )}
+
+                    {/* Separator + Clear Canvas */}
+                    {onClearCanvas && (
+                        <>
+                            <Separator />
+                            <button
+                                onClick={onClearCanvas}
+                                title="Clear Canvas"
+                                className={`
+                                    inline-flex items-center rounded-md font-medium transition-colors
+                                    text-destructive hover:bg-destructive/10
+                                    ${expanded
+                                        ? 'h-8 gap-2 px-3 text-sm justify-start'
+                                        : 'h-8 w-8 justify-center'
+                                    }
+                                `}
+                            >
+                                <Trash2 className="w-4 h-4 shrink-0" />
+                                {expanded && <span>Clear Canvas</span>}
+                            </button>
+                        </>
+                    )}
+                </div>
+
+                {/* Add Node dropdown */}
+                {isOpen && (
+                    <>
+                        <div
+                            className="fixed inset-0 z-10"
+                            onClick={() => {
+                                setIsOpen(false)
+                                setActiveCategory(null)
+                            }}
+                        />
+
+                        <div className="absolute right-0 flex flex-row-reverse gap-2 items-start z-20" style={{ top: 'calc(100% + 8px)' }}>
+                            <Card className="w-48 p-2 shadow-xl animate-in fade-in slide-in-from-top-2 duration-200">
+                                <div className="space-y-1">
+                                    <p className="px-2 py-1 text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                                        Categories
+                                    </p>
+
+                                    {categories.map((category) => (
+                                        <button
+                                            key={category.name}
+                                            onMouseEnter={() => setActiveCategory(category.name)}
+                                            className={`w-full flex items-center justify-between p-2 rounded-lg text-left text-sm transition-colors ${
+                                                activeCategory === category.name
+                                                ? 'bg-accent text-accent-foreground'
+                                                : 'hover:bg-accent/50'
+                                            }`}
+                                        >
+                                            <span className="font-medium">{category.name}</span>
+                                            <ChevronRight className="w-4 h-4 opacity-50" />
+                                        </button>
+                                    ))}
+                                </div>
+                            </Card>
+
+                            {activeCategory && (
+                                <Card className="w-64 p-2 shadow-xl animate-in fade-in slide-in-from-right-2 duration-200">
+                                    <div className="space-y-1">
+                                        <p className="px-2 py-1 text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                                            {activeCategory} Nodes
+                                        </p>
+
+                                        {categories.find(c => c.name === activeCategory)?.nodes.map((node) => {
+                                            const Icon = node.icon
+                                            return (
+                                                <button
+                                                    key={node.type}
+                                                    onClick={() => handleAddNode(node.type)}
+                                                    className="w-full flex items-start gap-3 p-3 rounded-lg hover:bg-accent/50 transition-colors text-left group"
+                                                >
+                                                    <div className="p-2 rounded-md bg-primary/10 text-primary group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
+                                                        <Icon className="w-4 h-4" />
+                                                    </div>
+                                                    <div className="flex-1 min-w-0">
+                                                        <div className="font-medium text-sm">{node.label}</div>
+                                                        <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">
+                                                            {node.description}
+                                                        </p>
+                                                    </div>
+                                                </button>
+                                            )
+                                        })}
+                                    </div>
+                                </Card>
+                            )}
+                        </div>
                     </>
                 )}
             </div>
-
-            {/* Dropdown Menu */}
-            {isOpen && (
-                <>
-                    {/* Backdrop to close on click outside */}
-                    <div
-                        className="fixed inset-0 z-10"
-                        onClick={() => {
-                            setIsOpen(false)
-                            setActiveCategory(null)
-                        }}
-                    />
-
-                    <div className="absolute top-12 right-0 flex flex-row-reverse gap-2 items-start z-20">
-                        {/* Main Category Menu */}
-                        <Card className="w-48 p-2 shadow-xl animate-in fade-in slide-in-from-top-2 duration-200">
-                            <div className="space-y-1">
-                                <p className="px-2 py-1 text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                                    Categories
-                                </p>
-
-                                {categories.map((category) => (
-                                    <button
-                                        key={category.name}
-                                        onMouseEnter={() => setActiveCategory(category.name)}
-                                        className={`w-full flex items-center justify-between p-2 rounded-lg text-left text-sm transition-colors ${
-                                            activeCategory === category.name
-                                            ? 'bg-accent text-accent-foreground'
-                                            : 'hover:bg-accent/50'
-                                        }`}
-                                    >
-                                        <span className="font-medium">{category.name}</span>
-                                        <ChevronRight className="w-4 h-4 opacity-50" />
-                                    </button>
-                                ))}
-                            </div>
-                        </Card>
-
-                        {/* Submenu for Active Category */}
-                        {activeCategory && (
-                            <Card className="w-64 p-2 shadow-xl animate-in fade-in slide-in-from-right-2 duration-200">
-                                <div className="space-y-1">
-                                    <p className="px-2 py-1 text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                                        {activeCategory} Nodes
-                                    </p>
-
-                                    {categories.find(c => c.name === activeCategory)?.nodes.map((node) => {
-                                        const Icon = node.icon
-                                        return (
-                                            <button
-                                                key={node.type}
-                                                onClick={() => handleAddNode(node.type)}
-                                                className="w-full flex items-start gap-3 p-3 rounded-lg hover:bg-accent/50 transition-colors text-left group"
-                                            >
-                                                <div className="p-2 rounded-md bg-primary/10 text-primary group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
-                                                    <Icon className="w-4 h-4" />
-                                                </div>
-                                                <div className="flex-1 min-w-0">
-                                                    <div className="font-medium text-sm">{node.label}</div>
-                                                    <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">
-                                                        {node.description}
-                                                    </p>
-                                                </div>
-                                            </button>
-                                        )
-                                    })}
-                                </div>
-                            </Card>
-                        )}
-                    </div>
-                </>
-            )}
         </Panel>
     )
 }
