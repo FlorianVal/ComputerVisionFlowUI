@@ -118,7 +118,7 @@ function AddNodeMenu({ onAddNode, onExportCode, onClearCanvas }) {
 
     return (
         <Panel position="top-right" className="!top-16 !right-4">
-            <div className="flex flex-col items-stretch gap-1 w-36">
+            <div className="flex flex-col items-stretch gap-1 w-36 bg-background/95 backdrop-blur-sm border rounded-lg shadow-lg p-1.5">
                 {/* Add Node */}
                 <Button
                     variant="default"
