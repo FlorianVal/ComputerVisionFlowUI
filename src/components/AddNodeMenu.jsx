@@ -140,7 +140,7 @@ function AddNodeMenu({ onAddNode, onExportCode, onClearCanvas }) {
                 {/* Toolbar — only the width changes, buttons keep a fixed layout */}
                 <div
                     className="flex flex-col items-stretch gap-1 p-1.5 bg-background/95 backdrop-blur-sm border rounded-lg shadow-lg overflow-hidden transition-[width] duration-200 ease-in-out"
-                    style={{ width: expanded ? 152 : 40 }}
+                    style={{ width: expanded ? 152 : 44 }}
                 >
                     <button
                         onClick={() => setIsOpen(!isOpen)}
