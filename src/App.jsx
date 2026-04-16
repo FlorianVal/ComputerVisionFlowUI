@@ -190,7 +190,7 @@ function FlowCanvas() {
                 <Background variant="dots" gap={16} size={1} />
                 <Controls />
                 <AddNodeMenu onAddNode={handleAddNode} />
-                <Panel position="top-right" className="mt-12">
+                <Panel position="top-right" className="!top-28 !right-4">
                     <button
                         onClick={() => setShowExport(true)}
                         className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-md border bg-background/90 backdrop-blur-sm shadow-sm hover:bg-muted transition-colors"
