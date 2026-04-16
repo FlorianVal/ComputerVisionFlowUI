@@ -1,7 +1,8 @@
-import React, { memo, useState, useCallback, useMemo } from 'react'
+import React, { memo, useCallback, useMemo } from 'react'
 import { ExpandableNode } from '@/nodes/base'
 import { useNodeInput, useNodeOutput, DataTypes, createImagePayload } from '@/data'
 import { useImageProcessor } from '@/hooks/useImageProcessor'
+import { useNodeConfig } from '@/hooks/useNodeConfig'
 import { processBlur } from '@/services/imageProcessor'
 import { Slider } from '@/components/ui/slider'
 import { Select } from '@/components/ui/select'
@@ -17,9 +18,12 @@ function BlurNode({ id, data, selected }) {
     const inputImageUrl = inputData?.imageUrl
     const updateOutput = useNodeOutput(id)
 
-    // Blur options state
-    const [strength, setStrength] = useState(data.strength ?? 15)
-    const [blurType, setBlurType] = useState(data.blurType ?? 'gaussian')
+    // Blur options state — synced to node.data for export
+    const [config, setConfig] = useNodeConfig(id, {
+        strength: data.strength ?? 15,
+        blurType: data.blurType ?? 'gaussian',
+    })
+    const { strength, blurType } = config
 
     const blurTypeOptions = [
         { value: 'gaussian', label: 'Gaussian' },
@@ -27,24 +31,21 @@ function BlurNode({ id, data, selected }) {
         { value: 'median', label: 'Median' },
     ]
 
-    // Handle strength change
     const handleStrengthChange = useCallback((value) => {
-        setStrength(value)
-    }, [])
+        setConfig({ strength: value })
+    }, [setConfig])
 
-    // Handle blur type change
     const handleBlurTypeChange = useCallback((value) => {
-        setBlurType(value)
-    }, [])
+        setConfig({ blurType: value })
+    }, [setConfig])
 
     // Memoize options to avoid unnecessary reprocessing
     const processingOptions = useMemo(() => ({
         strength,
         blurType,
-        metadata: inputData?.metadata // Pass metadata through
+        metadata: inputData?.metadata
     }), [strength, blurType, inputData])
 
-    // Callback when processing completes
     const handleProcessingComplete = useCallback((result) => {
         updateOutput({
             image: createImagePayload({
@@ -54,16 +55,14 @@ function BlurNode({ id, data, selected }) {
         })
     }, [updateOutput])
 
-    // Use the image processor hook
     const { isProcessing, error, isWaitingForOpenCV } = useImageProcessor(
         processBlur,
         inputImageUrl,
         processingOptions,
         handleProcessingComplete,
-        [strength, blurType] // Reprocess when options change
+        [strength, blurType]
     )
 
-    // Options content for the expandable panel
     const optionsContent = (
         <>
             <Slider

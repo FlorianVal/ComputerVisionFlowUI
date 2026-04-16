@@ -1,7 +1,8 @@
-import React, { memo, useState, useCallback, useMemo } from 'react'
+import React, { memo, useCallback, useMemo } from 'react'
 import { ExpandableNode } from '@/nodes/base'
 import { useNodeInput, useNodeOutput, DataTypes, createImagePayload } from '@/data'
 import { useImageProcessor } from '@/hooks/useImageProcessor'
+import { useNodeConfig } from '@/hooks/useNodeConfig'
 import { processRotate } from '@/services/imageProcessor'
 import { Slider } from '@/components/ui/slider'
 
@@ -13,9 +14,13 @@ function RotateNode({ id, data, selected }) {
     const inputImageUrl = inputData?.imageUrl
     const updateOutput = useNodeOutput(id)
 
-    const [angle, setAngle] = useState(data.angle ?? 0)
+    // Config synced to node.data for export
+    const [config, setConfig] = useNodeConfig(id, {
+        angle: data.angle ?? 0,
+    })
+    const { angle } = config
 
-    const handleAngleChange = useCallback((v) => setAngle(v), [])
+    const handleAngleChange = useCallback((v) => setConfig({ angle: v }), [setConfig])
 
     const processingOptions = useMemo(() => ({ angle, metadata: inputData?.metadata }), [angle, inputData])
 

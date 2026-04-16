@@ -1,42 +1,40 @@
-import React, { memo, useState, useCallback, useMemo } from 'react'
+import React, { memo, useCallback, useMemo } from 'react'
 import { ExpandableNode } from '@/nodes/base'
 import { useNodeInput, useNodeOutput, DataTypes, createImagePayload } from '@/data'
 import { useImageProcessor } from '@/hooks/useImageProcessor'
+import { useNodeConfig } from '@/hooks/useNodeConfig'
 import { processCanny } from '@/services/imageProcessor'
 import { Slider } from '@/components/ui/slider'
 
 /**
  * CannyNode - Applies Canny edge detection to input image
  * Uses OpenCV.js (required, no fallback)
- * Refactored to use BaseNode via ExpandableNode
  */
 function CannyNode({ id, data, selected }) {
-    // Use the data hooks
     const { data: inputData, isConnected } = useNodeInput(id, 'image-in', DataTypes.IMAGE)
     const inputImageUrl = inputData?.imageUrl
     const updateOutput = useNodeOutput(id)
 
-    // Canny threshold options
-    const [threshold1, setThreshold1] = useState(data.threshold1 ?? 50)
-    const [threshold2, setThreshold2] = useState(data.threshold2 ?? 150)
+    // Config synced to node.data for export
+    const [config, setConfig] = useNodeConfig(id, {
+        threshold1: data.threshold1 ?? 50,
+        threshold2: data.threshold2 ?? 150,
+    })
+    const { threshold1, threshold2 } = config
 
-    // Handle threshold1 change
     const handleThreshold1Change = useCallback((value) => {
-        setThreshold1(value)
-    }, [])
+        setConfig({ threshold1: value })
+    }, [setConfig])
 
-    // Handle threshold2 change
     const handleThreshold2Change = useCallback((value) => {
-        setThreshold2(value)
-    }, [])
+        setConfig({ threshold2: value })
+    }, [setConfig])
 
-    // Memoize options to avoid unnecessary reprocessing
     const processingOptions = useMemo(() => ({
         threshold1,
         threshold2,
     }), [threshold1, threshold2])
 
-    // Callback when processing completes
     const handleProcessingComplete = useCallback((result) => {
         updateOutput({
             image: createImagePayload({
@@ -46,16 +44,14 @@ function CannyNode({ id, data, selected }) {
         })
     }, [updateOutput])
 
-    // Use the image processor hook
     const { isProcessing, error, isWaitingForOpenCV } = useImageProcessor(
         processCanny,
         inputImageUrl,
         processingOptions,
         handleProcessingComplete,
-        [threshold1, threshold2] // Reprocess when options change
+        [threshold1, threshold2]
     )
 
-    // Options content for the expandable panel
     const optionsContent = (
         <>
             <Slider

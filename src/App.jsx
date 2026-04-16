@@ -1,4 +1,4 @@
-import React, { useCallback, useRef } from 'react'
+import React, { useCallback, useRef, useState } from 'react'
 import ReactFlow, {
     Controls,
     Background,
@@ -12,9 +12,8 @@ import { OpenCVProvider } from '@/contexts/OpenCVContext'
 import { nodeTypes } from '@/nodes'
 import AddNodeMenu from '@/components/AddNodeMenu'
 import OpenCVStatus from '@/components/OpenCVStatus'
-import { Button } from '@/components/ui/button'
+import ExportModal from '@/components/ExportModal'
 import elephantImg from '../asset/imagenet_elephant.jpg'
-import { Trash2 } from 'lucide-react'
 
 // Helper to add some visual noise to node positions
 const jitter = (val, range = 20) => val + (Math.random() - 0.5) * range
@@ -134,7 +133,8 @@ const initialEdges = [
 
 function FlowCanvas() {
     const nodeIdCounter = useRef(2)
-    const { getViewport, addNodes, setEdges, setNodes } = useReactFlow()
+    const { getViewport, addNodes, setEdges, setNodes, getNodes, getEdges } = useReactFlow()
+    const [showExport, setShowExport] = useState(false)
 
     // Key fix: Use defaultNodes/defaultEdges for uncontrolled mode
     // allowing nodes to update themselves via useNodeOutput without fighting App state
@@ -187,29 +187,32 @@ function FlowCanvas() {
     }, [setNodes, setEdges])
 
     return (
-        <ReactFlow
-            defaultNodes={initialNodes}
-            defaultEdges={initialEdges}
-            onConnect={onConnect}
-            nodeTypes={nodeTypes}
-            fitView
-            className="bg-slate-50"
-        >
-            <Background variant="dots" gap={16} size={1} />
-            <Controls />
-            <AddNodeMenu onAddNode={handleAddNode}>
-                <Button
-                    type="button"
-                    variant="destructive"
-                    size="icon"
-                    onClick={handleClearCanvas}
-                    className="h-10 w-10 rounded-full shadow-lg hover:shadow-xl"
-                    aria-label="Clear canvas"
-                >
-                    <Trash2 className="h-4 w-4" />
-                </Button>
-            </AddNodeMenu>
-        </ReactFlow>
+        <>
+            <ReactFlow
+                defaultNodes={initialNodes}
+                defaultEdges={initialEdges}
+                onConnect={onConnect}
+                nodeTypes={nodeTypes}
+                fitView
+                className="bg-slate-50"
+            >
+                <Background variant="dots" gap={16} size={1} />
+                <Controls />
+                <AddNodeMenu
+                    onAddNode={handleAddNode}
+                    onExportCode={() => setShowExport(true)}
+                    onClearCanvas={handleClearCanvas}
+                />
+            </ReactFlow>
+
+            {showExport && (
+                <ExportModal
+                    nodes={getNodes()}
+                    edges={getEdges()}
+                    onClose={() => setShowExport(false)}
+                />
+            )}
+        </>
     )
 }
 
