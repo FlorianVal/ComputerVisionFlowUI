@@ -128,7 +128,10 @@ function AddNodeMenu({ onAddNode, onExportCode, onClearCanvas }) {
         }))
     }, [])
 
-    const btnBase = 'flex items-center gap-2 h-8 px-2 rounded-md text-sm font-medium whitespace-nowrap transition-colors'
+    const btnBase = 'flex items-center h-8 rounded-md text-sm font-medium transition-colors overflow-hidden'
+    const btnLayout = expanded ? 'w-full justify-start px-2' : 'w-8 justify-center px-0'
+    const labelBase = 'whitespace-nowrap overflow-hidden transition-[max-width,margin,opacity] duration-200 ease-in-out'
+    const labelLayout = expanded ? 'ml-2 max-w-[160px] opacity-100' : 'ml-0 max-w-0 opacity-0'
 
     return (
         <Panel position="top-right" className="!top-16 !right-4">
@@ -137,28 +140,28 @@ function AddNodeMenu({ onAddNode, onExportCode, onClearCanvas }) {
                 onMouseLeave={handleMouseLeave}
                 className="relative"
             >
-                {/* Toolbar — only the width changes, buttons keep a fixed layout */}
+                {/* Toolbar — collapsed shows centered icons, expands on hover to reveal labels */}
                 <div
                     className="flex flex-col items-stretch gap-1 p-1.5 bg-background/95 backdrop-blur-sm border rounded-lg shadow-lg overflow-hidden transition-[width] duration-200 ease-in-out"
-                    style={{ width: expanded ? 152 : 44 }}
+                    style={{ width: expanded ? 168 : 44 }}
                 >
                     <button
                         onClick={() => setIsOpen(!isOpen)}
                         title="Add Node"
-                        className={`${btnBase} bg-primary text-primary-foreground hover:bg-primary/90`}
+                        className={`${btnBase} ${btnLayout} bg-primary text-primary-foreground hover:bg-primary/90`}
                     >
                         <PlusIcon className="w-4 h-4 shrink-0" />
-                        Add Node
+                        <span className={`${labelBase} ${labelLayout}`}>Add Node</span>
                     </button>
 
                     {onExportCode && (
                         <button
                             onClick={onExportCode}
                             title="Export Code"
-                            className={`${btnBase} border border-input bg-background hover:bg-accent hover:text-accent-foreground`}
+                            className={`${btnBase} ${btnLayout} border border-input bg-background hover:bg-accent hover:text-accent-foreground`}
                         >
                             <Code2 className="w-4 h-4 shrink-0" />
-                            Export Code
+                            <span className={`${labelBase} ${labelLayout}`}>Export Code</span>
                         </button>
                     )}
 
@@ -168,10 +171,10 @@ function AddNodeMenu({ onAddNode, onExportCode, onClearCanvas }) {
                             <button
                                 onClick={onClearCanvas}
                                 title="Clear Canvas"
-                                className={`${btnBase} text-destructive hover:bg-destructive/10`}
+                                className={`${btnBase} ${btnLayout} text-destructive hover:bg-destructive/10`}
                             >
                                 <Trash2 className="w-4 h-4 shrink-0" />
-                                Clear Canvas
+                                <span className={`${labelBase} ${labelLayout}`}>Clear Canvas</span>
                             </button>
                         </>
                     )}
