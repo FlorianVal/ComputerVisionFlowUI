@@ -1,6 +1,5 @@
 import React, { useState, useCallback, useMemo, useRef } from 'react'
 import { Panel } from 'reactflow'
-import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
 import { PlusIcon, ImageIcon, PaletteIcon, BlendIcon, ScanLineIcon, LayersIcon, PencilIcon, RotateCw, Sun, ChevronRight, Code2, Trash2 } from 'lucide-react'
@@ -89,28 +88,23 @@ export const nodeDefinitions = [
 ]
 
 /**
- * AddNodeMenu - A floating toolbar with canvas actions and a node picker
+ * AddNodeMenu - A floating toolbar with canvas actions and a node picker.
+ * Collapsed by default (icons only), expands on hover to show labels.
  */
 function AddNodeMenu({ onAddNode, onExportCode, onClearCanvas }) {
     const [isOpen, setIsOpen] = useState(false)
     const [activeCategory, setActiveCategory] = useState(null)
     const [hovered, setHovered] = useState(false)
-    const [showText, setShowText] = useState(false)
     const leaveTimer = useRef(null)
-    const textTimer = useRef(null)
 
     const expanded = hovered || isOpen
 
     const handleMouseEnter = useCallback(() => {
         clearTimeout(leaveTimer.current)
         setHovered(true)
-        // Show text only after width transition completes (200ms)
-        textTimer.current = setTimeout(() => setShowText(true), 200)
     }, [])
 
     const handleMouseLeave = useCallback(() => {
-        clearTimeout(textTimer.current)
-        setShowText(false)
         leaveTimer.current = setTimeout(() => setHovered(false), 200)
     }, [])
 
@@ -120,7 +114,6 @@ function AddNodeMenu({ onAddNode, onExportCode, onClearCanvas }) {
         setActiveCategory(null)
     }, [onAddNode])
 
-    // Group nodes by category
     const categories = useMemo(() => {
         const groups = {}
         nodeDefinitions.forEach(node => {
@@ -135,6 +128,8 @@ function AddNodeMenu({ onAddNode, onExportCode, onClearCanvas }) {
         }))
     }, [])
 
+    const btnBase = 'flex items-center gap-2 h-8 px-2 rounded-md text-sm font-medium whitespace-nowrap transition-colors'
+
     return (
         <Panel position="top-right" className="!top-16 !right-4">
             <div
@@ -142,69 +137,41 @@ function AddNodeMenu({ onAddNode, onExportCode, onClearCanvas }) {
                 onMouseLeave={handleMouseLeave}
                 className="relative"
             >
-                {/* Toolbar container */}
-                <div className={`
-                    flex bg-background/95 backdrop-blur-sm border rounded-lg shadow-lg
-                    transition-all duration-200 overflow-hidden
-                    ${expanded
-                        ? 'flex-col items-stretch gap-1 p-1.5 w-[152px]'
-                        : 'flex-col items-center gap-0.5 p-1 w-10'
-                    }
-                `}>
-                    {/* Add Node */}
+                {/* Toolbar — only the width changes, buttons keep a fixed layout */}
+                <div
+                    className="flex flex-col items-stretch gap-1 p-1.5 bg-background/95 backdrop-blur-sm border rounded-lg shadow-lg overflow-hidden transition-[width] duration-200 ease-in-out"
+                    style={{ width: expanded ? 152 : 40 }}
+                >
                     <button
                         onClick={() => setIsOpen(!isOpen)}
                         title="Add Node"
-                        className={`
-                            inline-flex items-center rounded-md font-medium transition-colors
-                            bg-primary text-primary-foreground hover:bg-primary/90
-                            ${expanded
-                                ? 'h-8 gap-2 px-3 text-sm justify-start'
-                                : 'h-8 w-8 justify-center'
-                            }
-                        `}
+                        className={`${btnBase} bg-primary text-primary-foreground hover:bg-primary/90`}
                     >
                         <PlusIcon className="w-4 h-4 shrink-0" />
-                        <span className={`transition-opacity duration-100 whitespace-nowrap ${showText ? 'opacity-100' : 'opacity-0'}`}>Add Node</span>
+                        Add Node
                     </button>
 
-                    {/* Export Code */}
                     {onExportCode && (
                         <button
                             onClick={onExportCode}
                             title="Export Code"
-                            className={`
-                                inline-flex items-center rounded-md font-medium transition-colors
-                                border border-input bg-background hover:bg-accent hover:text-accent-foreground
-                                ${expanded
-                                    ? 'h-8 gap-2 px-3 text-sm justify-start'
-                                    : 'h-8 w-8 justify-center'
-                                }
-                            `}
+                            className={`${btnBase} border border-input bg-background hover:bg-accent hover:text-accent-foreground`}
                         >
                             <Code2 className="w-4 h-4 shrink-0" />
-                            <span className={`transition-opacity duration-100 whitespace-nowrap ${showText ? 'opacity-100' : 'opacity-0'}`}>Export Code</span>
+                            Export Code
                         </button>
                     )}
 
-                    {/* Separator + Clear Canvas */}
                     {onClearCanvas && (
                         <>
                             <Separator />
                             <button
                                 onClick={onClearCanvas}
                                 title="Clear Canvas"
-                                className={`
-                                    inline-flex items-center rounded-md font-medium transition-colors
-                                    text-destructive hover:bg-destructive/10
-                                    ${expanded
-                                        ? 'h-8 gap-2 px-3 text-sm justify-start'
-                                        : 'h-8 w-8 justify-center'
-                                    }
-                                `}
+                                className={`${btnBase} text-destructive hover:bg-destructive/10`}
                             >
                                 <Trash2 className="w-4 h-4 shrink-0" />
-                                <span className={`transition-opacity duration-100 whitespace-nowrap ${showText ? 'opacity-100' : 'opacity-0'}`}>Clear Canvas</span>
+                                Clear Canvas
                             </button>
                         </>
                     )}
