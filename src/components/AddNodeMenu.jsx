@@ -3,7 +3,7 @@ import { Panel } from 'reactflow'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
-import { PlusIcon, ImageIcon, PaletteIcon, BlendIcon, ScanLineIcon, LayersIcon, PencilIcon, RotateCw, Sun, ChevronRight, Code2, Trash2 } from 'lucide-react'
+import { PlusIcon, ImageIcon, PaletteIcon, BlendIcon, ScanLineIcon, LayersIcon, PencilIcon, RotateCw, Sun, ChevronRight, ChevronLeft, Code2, Trash2 } from 'lucide-react'
 
 /**
  * Node definitions with metadata for the add menu
@@ -94,6 +94,7 @@ export const nodeDefinitions = [
 function AddNodeMenu({ onAddNode, onExportCode, onClearCanvas }) {
     const [isOpen, setIsOpen] = useState(false)
     const [activeCategory, setActiveCategory] = useState(null)
+    const [collapsed, setCollapsed] = useState(false)
 
     const handleAddNode = useCallback((nodeType) => {
         onAddNode(nodeType)
@@ -118,16 +119,31 @@ function AddNodeMenu({ onAddNode, onExportCode, onClearCanvas }) {
 
     return (
         <Panel position="top-right" className="!top-16 !right-4">
-            <div className="flex flex-col items-stretch gap-1 w-36 bg-background/95 backdrop-blur-sm border rounded-lg shadow-lg p-1.5">
+            <div className={`flex flex-col items-stretch gap-1 bg-background/95 backdrop-blur-sm border rounded-lg shadow-lg p-1.5 transition-all duration-200 ${collapsed ? 'w-9' : 'w-36'}`}>
+
+                {/* Collapse toggle */}
+                <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => { setCollapsed(c => !c); setIsOpen(false) }}
+                    className="gap-2 justify-center px-0 text-muted-foreground hover:text-foreground"
+                    title={collapsed ? 'Expand menu' : 'Collapse menu'}
+                >
+                    {collapsed ? <ChevronLeft className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+                </Button>
+
+                <Separator className="my-0.5" />
+
                 {/* Add Node */}
                 <Button
                     variant="default"
                     size="sm"
                     onClick={() => setIsOpen(!isOpen)}
-                    className="shadow-lg hover:shadow-xl transition-all duration-200 gap-2 justify-start"
+                    className="transition-all duration-200 gap-2 justify-start px-2"
+                    title="Add Node"
                 >
                     <PlusIcon className="w-4 h-4 shrink-0" />
-                    Add Node
+                    {!collapsed && 'Add Node'}
                 </Button>
 
                 {/* Export Code */}
@@ -136,14 +152,15 @@ function AddNodeMenu({ onAddNode, onExportCode, onClearCanvas }) {
                         variant="outline"
                         size="sm"
                         onClick={onExportCode}
-                        className="gap-2 justify-start"
+                        className="gap-2 justify-start px-2"
+                        title="Export Code"
                     >
                         <Code2 className="w-4 h-4 shrink-0" />
-                        Export Code
+                        {!collapsed && 'Export Code'}
                     </Button>
                 )}
 
-                {/* Separator + Clear Canvas */}
+                {/* Clear Canvas */}
                 {onClearCanvas && (
                     <>
                         <Separator className="my-0.5" />
@@ -151,10 +168,11 @@ function AddNodeMenu({ onAddNode, onExportCode, onClearCanvas }) {
                             variant="ghost"
                             size="sm"
                             onClick={onClearCanvas}
-                            className="gap-2 justify-start text-destructive hover:text-destructive hover:bg-destructive/10"
+                            className="gap-2 justify-start px-2 text-destructive hover:text-destructive hover:bg-destructive/10"
+                            title="Clear Canvas"
                         >
                             <Trash2 className="w-4 h-4 shrink-0" />
-                            Clear Canvas
+                            {!collapsed && 'Clear Canvas'}
                         </Button>
                     </>
                 )}
