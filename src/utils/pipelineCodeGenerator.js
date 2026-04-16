@@ -3,6 +3,14 @@
  *
  * Converts a VisioFlow node/edge graph into runnable Python (cv2) or
  * JavaScript (OpenCV.js) code that reproduces the same processing pipeline.
+ *
+ * Traversal algorithm:
+ *   Starting from each imageSource node, a DFS collects every root-to-leaf
+ *   path through the graph. Each path becomes one self-contained pipeline.
+ *   When a node has multiple output edges (a branch/fork), each outgoing
+ *   branch produces its own pipeline — inheriting all operations accumulated
+ *   up to that fork point. Execution ends when a node with no outputs is
+ *   reached (leaf).
  */
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
@@ -12,108 +20,94 @@ function varName(nodeId) {
     return 'img_' + nodeId.replace(/[^a-zA-Z0-9]/g, '_')
 }
 
-/** Sanitize for Python identifier suffixes like "_blur_1" */
+/** Sanitize a node id for use as an identifier suffix */
 function safeSuffix(nodeId) {
     return nodeId.replace(/[^a-zA-Z0-9]/g, '_')
 }
 
+// ─── Graph Traversal ─────────────────────────────────────────────────────────
+
 /**
- * Topological sort (Kahn's algorithm) over the ReactFlow graph.
- * Returns nodes in dependency order.
+ * Recursively collect all root-to-leaf paths starting from nodeId.
+ *
+ * @param {string}   nodeId       - Current node being visited
+ * @param {object[]} currentPath  - Nodes accumulated so far on this path
+ * @param {object}   adjacency    - { nodeId: [childId, ...] }
+ * @param {object}   nodeMap      - { nodeId: node }
+ * @returns {object[][]} Array of complete paths (each path is an array of nodes)
  */
-function topologicalSort(nodes, edges) {
-    const inDegree = {}
-    const adjacency = {}
+function collectPaths(nodeId, currentPath, adjacency, nodeMap) {
+    const node = nodeMap[nodeId]
+    if (!node) return []
+
+    const path = [...currentPath, node]
+    const children = adjacency[nodeId] || []
+
+    if (children.length === 0) {
+        // Leaf node — this path is a complete pipeline
+        return [path]
+    }
+
+    // Follow every outgoing edge; each branch becomes its own pipeline
+    const paths = []
+    for (const childId of children) {
+        paths.push(...collectPaths(childId, path, adjacency, nodeMap))
+    }
+    return paths
+}
+
+/**
+ * Build the ordered list of pipelines from the ReactFlow node/edge arrays.
+ *
+ * Each imageSource root is the starting point of a DFS. The result is one
+ * pipeline per root-to-leaf path. Nodes unreachable from any imageSource
+ * are grouped into a "Disconnected Nodes" section.
+ *
+ * @param {object[]} nodes - ReactFlow nodes
+ * @param {object[]} edges - ReactFlow edges
+ * @returns {{ label: string, nodes: object[] }[]}
+ */
+function buildPipelines(nodes, edges) {
     const nodeMap = {}
+    for (const node of nodes) nodeMap[node.id] = node
 
-    for (const node of nodes) {
-        inDegree[node.id] = 0
-        adjacency[node.id] = []
-        nodeMap[node.id] = node
-    }
-
-    for (const edge of edges) {
-        if (adjacency[edge.source] !== undefined && inDegree[edge.target] !== undefined) {
-            adjacency[edge.source].push(edge.target)
-            inDegree[edge.target]++
-        }
-    }
-
-    const queue = nodes.filter(n => inDegree[n.id] === 0).map(n => n.id)
-    const sorted = []
-
-    while (queue.length > 0) {
-        const nodeId = queue.shift()
-        if (nodeMap[nodeId]) sorted.push(nodeMap[nodeId])
-        for (const targetId of adjacency[nodeId]) {
-            inDegree[targetId]--
-            if (inDegree[targetId] === 0) queue.push(targetId)
-        }
-    }
-
-    return sorted
-}
-
-/**
- * Build a map: targetNodeId → sourceNodeId from the edges list.
- * (Each node has at most one input, enforced by the app.)
- */
-function buildInputMap(edges) {
-    const inputMap = {}
-    for (const edge of edges) {
-        inputMap[edge.target] = edge.source
-    }
-    return inputMap
-}
-
-/**
- * Group connected nodes into pipeline chains, each starting from an imageSource.
- * Returns an array of { label, nodes } objects.
- */
-function buildChains(sortedNodes, edges) {
+    // Build outgoing-edge adjacency list
     const adjacency = {}
-    for (const node of sortedNodes) adjacency[node.id] = []
+    for (const node of nodes) adjacency[node.id] = []
     for (const edge of edges) {
         if (adjacency[edge.source] !== undefined) {
             adjacency[edge.source].push(edge.target)
         }
     }
 
-    const sources = sortedNodes.filter(n => n.type === 'imageSource')
-    const chains = []
+    const sources = nodes.filter(n => n.type === 'imageSource')
+    const pipelines = []
+    let index = 1
 
-    for (let i = 0; i < sources.length; i++) {
-        const source = sources[i]
-        const visited = new Set()
-        const chain = []
-
-        // BFS from this source (valid topological order since single-input per node)
-        const queue = [source.id]
-        while (queue.length > 0) {
-            const id = queue.shift()
-            if (visited.has(id)) continue
-            visited.add(id)
-            const node = sortedNodes.find(n => n.id === id)
-            if (node) chain.push(node)
-            for (const targetId of adjacency[id]) queue.push(targetId)
+    for (const source of sources) {
+        const paths = collectPaths(source.id, [], adjacency, nodeMap)
+        for (const path of paths) {
+            pipelines.push({ label: `Pipeline ${index++}`, nodes: path })
         }
-
-        chains.push({ label: `Pipeline ${i + 1}`, nodes: chain })
     }
 
-    // Collect orphan nodes (not reachable from any imageSource)
-    const reachable = new Set(chains.flatMap(c => c.nodes.map(n => n.id)))
-    const orphans = sortedNodes.filter(n => !reachable.has(n.id))
+    // Collect nodes not reachable from any imageSource
+    const reachable = new Set(pipelines.flatMap(p => p.nodes.map(n => n.id)))
+    const orphans = nodes.filter(n => !reachable.has(n.id))
     if (orphans.length > 0) {
-        chains.push({ label: 'Disconnected Nodes', nodes: orphans })
+        pipelines.push({ label: 'Disconnected Nodes', nodes: orphans })
     }
 
-    return chains
+    return pipelines
 }
 
 // ─── Python Code Generation ──────────────────────────────────────────────────
 
-function pyNodeCode(node, inputVar, idx) {
+/**
+ * Emit Python (cv2) lines for a single node.
+ * inputVar is the variable holding the upstream image, or null for source nodes.
+ */
+function pyNodeCode(node, inputVar) {
     const { id, type, data } = node
     const out = varName(id)
     const s = safeSuffix(id)
@@ -142,7 +136,7 @@ function pyNodeCode(node, inputVar, idx) {
                 lines.push(`${out} = cv2.GaussianBlur(${inputVar}, (${ksize}, ${ksize}), 0)`)
             } else if (blurType === 'box') {
                 lines.push(`${out} = cv2.blur(${inputVar}, (${ksize}, ${ksize}))`)
-            } else if (blurType === 'median') {
+            } else {
                 lines.push(`${out} = cv2.medianBlur(${inputVar}, ${ksize})`)
             }
             break
@@ -166,8 +160,7 @@ function pyNodeCode(node, inputVar, idx) {
         case 'findContours': {
             const fill = data.fill ?? false
             const thickness = fill ? -1 : 2
-            const fillLabel = fill ? 'filled' : 'outline'
-            lines.push(`# Find Contours (${fillLabel})`)
+            lines.push(`# Find Contours (${fill ? 'filled' : 'outline'})`)
             lines.push(`_gray_${s} = cv2.cvtColor(${inputVar}, cv2.COLOR_BGR2GRAY) if len(${inputVar}.shape) == 3 else ${inputVar}`)
             lines.push(`_, _binary_${s} = cv2.threshold(_gray_${s}, 127, 255, cv2.THRESH_BINARY | cv2.THRESH_OTSU)`)
             lines.push(`_contours_${s}, _ = cv2.findContours(_binary_${s}, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)`)
@@ -228,38 +221,33 @@ function pyNodeCode(node, inputVar, idx) {
 }
 
 function generatePythonCode(nodes, edges) {
-    const sortedNodes = topologicalSort(nodes, edges)
-    const inputMap = buildInputMap(edges)
-    const chains = buildChains(sortedNodes, edges)
-
+    const pipelines = buildPipelines(nodes, edges)
     const parts = []
 
     parts.push('import cv2')
     parts.push('import numpy as np')
 
-    for (const { label, nodes: chainNodes } of chains) {
+    for (const { label, nodes: pathNodes } of pipelines) {
         parts.push('')
         parts.push(`# ${'='.repeat(60)}`)
         parts.push(`# ${label}`)
         parts.push(`# ${'='.repeat(60)}`)
 
-        for (let i = 0; i < chainNodes.length; i++) {
-            const node = chainNodes[i]
-            const sourceId = inputMap[node.id]
-            const inputVar = sourceId ? varName(sourceId) : null
-
-            const { lines, outVar } = pyNodeCode(node, inputVar, i)
+        // Walk the path sequentially; each node receives the previous node's output
+        let inputVar = null
+        for (const node of pathNodes) {
+            const { lines, outVar } = pyNodeCode(node, inputVar)
             parts.push('')
             parts.push(...lines)
+            inputVar = outVar
         }
 
-        // Show the last node's output
-        const lastNode = chainNodes[chainNodes.length - 1]
-        if (lastNode && lastNode.type !== 'imageSource') {
-            const lastVar = varName(lastNode.id)
+        // Show the final result
+        const lastNode = pathNodes[pathNodes.length - 1]
+        if (lastNode && lastNode.type !== 'imageSource' && inputVar) {
             parts.push('')
             parts.push(`# Display result`)
-            parts.push(`cv2.imshow('${label}', ${lastVar})`)
+            parts.push(`cv2.imshow('${label}', ${inputVar})`)
         }
     }
 
@@ -272,6 +260,10 @@ function generatePythonCode(nodes, edges) {
 
 // ─── JavaScript Code Generation ──────────────────────────────────────────────
 
+/**
+ * Emit OpenCV.js lines for a single node.
+ * inputVar is the variable holding the upstream cv.Mat, or null for source nodes.
+ */
 function jsNodeCode(node, inputVar) {
     const { id, type, data } = node
     const out = varName(id)
@@ -282,7 +274,7 @@ function jsNodeCode(node, inputVar) {
         case 'imageSource': {
             const name = data.imageName || 'image.jpg'
             lines.push(`// Image Source (${name})`)
-            lines.push(`// Replace 'inputImage_${s}' with your <img> or <canvas> element`)
+            lines.push(`// Replace 'inputImage' with your <img> or <canvas> element id`)
             lines.push(`const imgEl_${s} = document.getElementById('inputImage');`)
             lines.push(`let ${out} = cv.imread(imgEl_${s});`)
             break
@@ -303,7 +295,7 @@ function jsNodeCode(node, inputVar) {
                 lines.push(`cv.GaussianBlur(${inputVar}, ${out}, new cv.Size(${ksize}, ${ksize}), 0);`)
             } else if (blurType === 'box') {
                 lines.push(`cv.blur(${inputVar}, ${out}, new cv.Size(${ksize}, ${ksize}));`)
-            } else if (blurType === 'median') {
+            } else {
                 lines.push(`cv.medianBlur(${inputVar}, ${out}, ${ksize});`)
             }
             break
@@ -332,8 +324,7 @@ function jsNodeCode(node, inputVar) {
         case 'findContours': {
             const fill = data.fill ?? false
             const thickness = fill ? -1 : 2
-            const fillLabel = fill ? 'filled' : 'outline'
-            lines.push(`// Find Contours (${fillLabel})`)
+            lines.push(`// Find Contours (${fill ? 'filled' : 'outline'})`)
             lines.push(`let _gray_${s} = new cv.Mat();`)
             lines.push(`cv.cvtColor(${inputVar}, _gray_${s}, cv.COLOR_RGBA2GRAY);`)
             lines.push(`let _binary_${s} = new cv.Mat();`)
@@ -360,7 +351,6 @@ function jsNodeCode(node, inputVar) {
                 lines.push(`cv.inRange(${inputVar}, _lower_${s}, _upper_${s}, _mask_${s});`)
                 lines.push(`_lower_${s}.delete(); _upper_${s}.delete();`)
             } else {
-                // Multi-channel: split, inRange per channel, bitwise_and masks
                 lines.push(`let _chans_${s} = new cv.MatVector();`)
                 lines.push(`cv.split(${inputVar}, _chans_${s});`)
                 lines.push(`let _mask_${s} = null;`)
@@ -425,17 +415,17 @@ function jsNodeCode(node, inputVar) {
 }
 
 function generateJSCode(nodes, edges) {
-    const sortedNodes = topologicalSort(nodes, edges)
-    const inputMap = buildInputMap(edges)
-    const chains = buildChains(sortedNodes, edges)
-
+    const pipelines = buildPipelines(nodes, edges)
     const parts = []
+
     parts.push('// VisioFlow — Exported Pipeline (OpenCV.js)')
     parts.push('//')
     parts.push('// Prerequisites:')
     parts.push('//   <script async src="https://docs.opencv.org/4.x/opencv.js"></script>')
     parts.push('//')
-    parts.push('// Note: Call .delete() on all cv.Mat objects when done to free WASM memory.')
+    parts.push('// Each pipeline runs in its own block scope ({ }) to avoid variable')
+    parts.push('// conflicts between branches. Call .delete() on all cv.Mat objects')
+    parts.push('// when done to free WASM memory.')
     parts.push('')
     parts.push('async function runPipeline() {')
     parts.push('  // Wait for OpenCV.js to finish loading')
@@ -444,43 +434,44 @@ function generateJSCode(nodes, edges) {
     parts.push("    else { cv['onRuntimeInitialized'] = resolve; }")
     parts.push('  });')
 
-    for (const { label, nodes: chainNodes } of chains) {
+    for (const { label, nodes: pathNodes } of pipelines) {
         parts.push('')
         parts.push(`  // ${'─'.repeat(56)}`)
         parts.push(`  // ${label}`)
         parts.push(`  // ${'─'.repeat(56)}`)
+        // Each pipeline is isolated in its own block to avoid let re-declaration
+        // conflicts when multiple pipelines share the same node ids
+        parts.push(`  {`)
 
         const allVars = []
+        let inputVar = null
 
-        for (let i = 0; i < chainNodes.length; i++) {
-            const node = chainNodes[i]
-            const sourceId = inputMap[node.id]
-            const inputVar = sourceId ? varName(sourceId) : null
-
+        for (const node of pathNodes) {
             const { lines, outVar } = jsNodeCode(node, inputVar)
             parts.push('')
-            for (const line of lines) {
-                parts.push(`  ${line}`)
-            }
+            for (const line of lines) parts.push(`    ${line}`)
+            inputVar = outVar
             allVars.push(outVar)
         }
 
-        // Display last result
-        const lastNode = chainNodes[chainNodes.length - 1]
-        if (lastNode && lastNode.type !== 'imageSource') {
-            const lastVar = varName(lastNode.id)
+        // Display the leaf node's output
+        const lastNode = pathNodes[pathNodes.length - 1]
+        if (lastNode && lastNode.type !== 'imageSource' && inputVar) {
+            const canvasVar = `outCanvas_${safeSuffix(lastNode.id)}`
             parts.push('')
-            parts.push(`  // Display result on canvas`)
-            parts.push(`  const canvas_${safeSuffix(lastNode.id)} = document.getElementById('outputCanvas');  // Replace with your <canvas>`)
-            parts.push(`  cv.imshow(canvas_${safeSuffix(lastNode.id)}, ${lastVar});`)
+            parts.push(`    // Display result on canvas`)
+            parts.push(`    const ${canvasVar} = document.getElementById('outputCanvas');  // Replace with your <canvas>`)
+            parts.push(`    cv.imshow(${canvasVar}, ${inputVar});`)
         }
 
-        // Cleanup
+        // Free all allocated Mats
         if (allVars.length > 0) {
             parts.push('')
-            parts.push(`  // Free memory`)
-            parts.push(`  ${allVars.map(v => `${v}.delete()`).join('; ')};`)
+            parts.push(`    // Free memory`)
+            parts.push(`    ${allVars.map(v => `${v}.delete()`).join('; ')};`)
         }
+
+        parts.push(`  }`)
     }
 
     parts.push('}')
@@ -493,8 +484,8 @@ function generateJSCode(nodes, edges) {
 // ─── Public API ──────────────────────────────────────────────────────────────
 
 /**
- * Generate code for the given pipeline.
- * @param {object[]} nodes - ReactFlow nodes (with current data from getNodes())
+ * Generate code reproducing the pipeline.
+ * @param {object[]} nodes - ReactFlow nodes (current data from getNodes())
  * @param {object[]} edges - ReactFlow edges
  * @param {'python'|'javascript'} language
  * @returns {string} Generated source code
