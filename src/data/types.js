@@ -11,15 +11,53 @@ export const DataTypes = {
     ANY: 'any',
 }
 
+const VALID_COLOR_SPACES = new Set(['RGB', 'GRAY', 'HSV', 'LAB', 'YCrCb'])
+
+export function createImageMetadata(overrides = {}) {
+    return {
+        colorSpace: 'RGB',
+        channels: 3,
+        ...overrides,
+    }
+}
+
+export function createImagePayload({
+    imageUrl,
+    metadata,
+    imageName,
+    width,
+    height,
+} = {}) {
+    return {
+        imageUrl,
+        metadata: createImageMetadata(metadata),
+        ...(imageName ? { imageName } : {}),
+        ...(typeof width === 'number' ? { width } : {}),
+        ...(typeof height === 'number' ? { height } : {}),
+    }
+}
+
+export function isImagePayload(data) {
+    return Boolean(
+        data &&
+        typeof data.imageUrl === 'string' &&
+        data.imageUrl.length > 0 &&
+        data.metadata &&
+        typeof data.metadata === 'object' &&
+        VALID_COLOR_SPACES.has(data.metadata.colorSpace) &&
+        typeof data.metadata.channels === 'number'
+    )
+}
+
 /**
  * Data Schemas - Runtime validators for each data type
  * Each schema defines how to validate data and what fields are required
  */
 export const DataSchemas = {
     [DataTypes.IMAGE]: {
-        validate: (data) => data && typeof data.imageUrl === 'string' && data.imageUrl.length > 0,
-        requiredFields: ['imageUrl'],
-        description: 'Image data with a URL (blob or data URL)',
+        validate: isImagePayload,
+        requiredFields: ['imageUrl', 'metadata'],
+        description: 'Image payload with a URL and metadata',
     },
     [DataTypes.NUMBER]: {
         validate: (data) => data && typeof data.value === 'number' && !isNaN(data.value),

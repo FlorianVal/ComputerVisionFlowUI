@@ -45,8 +45,7 @@ export function useNodeInput(nodeId, handleId, expectedType) {
     const sourceData = useStore((state) => {
         if (!sourceNodeId) return null
         const sourceNode = state.nodeInternals.get(sourceNodeId)
-        // console.log(`[useNodeInput] ${nodeId} reading from ${sourceNodeId}:`, sourceNode?.data?.imageName)
-        return sourceNode?.data || null
+        return sourceNode?.data?.image || null
     })
 
     // Debug changes

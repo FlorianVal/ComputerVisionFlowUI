@@ -1,6 +1,6 @@
 import React, { memo, useCallback, useMemo } from 'react'
 import { ExpandableNode } from '@/nodes/base'
-import { useNodeInput, useNodeOutput, DataTypes } from '@/data'
+import { useNodeInput, useNodeOutput, DataTypes, createImagePayload } from '@/data'
 import { useImageProcessor } from '@/hooks/useImageProcessor'
 import { useNodeConfig } from '@/hooks/useNodeConfig'
 import { processBlur } from '@/services/imageProcessor'
@@ -48,8 +48,10 @@ function BlurNode({ id, data, selected }) {
 
     const handleProcessingComplete = useCallback((result) => {
         updateOutput({
-            imageUrl: result.outputUrl,
-            metadata: result.metadata
+            image: createImagePayload({
+                imageUrl: result.outputUrl,
+                metadata: result.metadata,
+            })
         })
     }, [updateOutput])
 
@@ -88,7 +90,7 @@ function BlurNode({ id, data, selected }) {
             inputs={[{ id: 'image-in' }]}
             outputs={[{ id: 'image-out' }]}
             selected={selected}
-            imageUrl={data.imageUrl}
+            image={data.image}
             isProcessing={isProcessing}
             isWaitingForOpenCV={isWaitingForOpenCV}
             error={error}

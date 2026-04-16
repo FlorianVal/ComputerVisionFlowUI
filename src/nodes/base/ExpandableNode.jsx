@@ -14,11 +14,12 @@ export function ExpandableNode({
     inputs,
     outputs,
     selected,
-    imageUrl,
+    image,
     isProcessing,
     isWaitingForOpenCV,
     error,
     isConnected,
+    showPreview,
     className,
 
     // Expandable props
@@ -27,6 +28,7 @@ export function ExpandableNode({
     defaultExpanded = false
 }) {
     const [isExpanded, setIsExpanded] = useState(defaultExpanded)
+    const shouldCollapseOptions = showPreview !== false
 
     const toggleExpanded = useCallback(() => {
         setIsExpanded(prev => !prev)
@@ -39,11 +41,12 @@ export function ExpandableNode({
             inputs={inputs}
             outputs={outputs}
             selected={selected}
-            imageUrl={imageUrl}
+            image={image}
             isProcessing={isProcessing}
             isWaitingForOpenCV={isWaitingForOpenCV}
             error={error}
             isConnected={isConnected}
+            showPreview={showPreview}
             className={className}
         >
             {/* Pass through children (if any specific non-option controls exist) */}
@@ -52,29 +55,33 @@ export function ExpandableNode({
             {/* Options Panel */}
             {options && (
                 <div className="pt-2 border-t border-border/50">
-                    {/* Expand/Collapse button */}
-                    <button
-                        onClick={toggleExpanded}
-                        className={cn(
-                            "w-full flex items-center justify-center gap-1 py-1 rounded",
-                            "text-xs text-muted-foreground",
-                            "hover:bg-accent/50 hover:text-foreground",
-                            "transition-colors"
-                        )}
-                    >
-                        <ChevronDown
+                    {shouldCollapseOptions && (
+                        <button
+                            onClick={toggleExpanded}
                             className={cn(
-                                "w-4 h-4 transition-transform duration-200",
-                                isExpanded && "rotate-180"
+                                "w-full flex items-center justify-center gap-1 py-1 rounded",
+                                "text-xs text-muted-foreground",
+                                "hover:bg-accent/50 hover:text-foreground",
+                                "transition-colors"
                             )}
-                        />
-                    </button>
+                        >
+                            <ChevronDown
+                                className={cn(
+                                    "w-4 h-4 transition-transform duration-200",
+                                    isExpanded && "rotate-180"
+                                )}
+                            />
+                        </button>
+                    )}
 
-                    {/* Collapsible options content */}
                     <div
                         className={cn(
-                            "overflow-hidden transition-all duration-200 ease-in-out",
-                            isExpanded ? "max-h-[500px] opacity-100 mt-2" : "max-h-0 opacity-0"
+                            shouldCollapseOptions
+                                ? "overflow-hidden transition-all duration-200 ease-in-out"
+                                : "mt-2",
+                            shouldCollapseOptions && (
+                                isExpanded ? "max-h-[500px] opacity-100 mt-2" : "max-h-0 opacity-0"
+                            )
                         )}
                     >
                         <div className="space-y-3 pb-1">
