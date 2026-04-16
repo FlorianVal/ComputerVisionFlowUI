@@ -95,16 +95,22 @@ function AddNodeMenu({ onAddNode, onExportCode, onClearCanvas }) {
     const [isOpen, setIsOpen] = useState(false)
     const [activeCategory, setActiveCategory] = useState(null)
     const [hovered, setHovered] = useState(false)
+    const [showText, setShowText] = useState(false)
     const leaveTimer = useRef(null)
+    const textTimer = useRef(null)
 
     const expanded = hovered || isOpen
 
     const handleMouseEnter = useCallback(() => {
         clearTimeout(leaveTimer.current)
         setHovered(true)
+        // Show text only after width transition completes (200ms)
+        textTimer.current = setTimeout(() => setShowText(true), 200)
     }, [])
 
     const handleMouseLeave = useCallback(() => {
+        clearTimeout(textTimer.current)
+        setShowText(false)
         leaveTimer.current = setTimeout(() => setHovered(false), 200)
     }, [])
 
@@ -159,7 +165,7 @@ function AddNodeMenu({ onAddNode, onExportCode, onClearCanvas }) {
                         `}
                     >
                         <PlusIcon className="w-4 h-4 shrink-0" />
-                        {expanded && <span>Add Node</span>}
+                        <span className={`transition-opacity duration-100 whitespace-nowrap ${showText ? 'opacity-100' : 'opacity-0'}`}>Add Node</span>
                     </button>
 
                     {/* Export Code */}
@@ -177,7 +183,7 @@ function AddNodeMenu({ onAddNode, onExportCode, onClearCanvas }) {
                             `}
                         >
                             <Code2 className="w-4 h-4 shrink-0" />
-                            {expanded && <span>Export Code</span>}
+                            <span className={`transition-opacity duration-100 whitespace-nowrap ${showText ? 'opacity-100' : 'opacity-0'}`}>Export Code</span>
                         </button>
                     )}
 
@@ -198,7 +204,7 @@ function AddNodeMenu({ onAddNode, onExportCode, onClearCanvas }) {
                                 `}
                             >
                                 <Trash2 className="w-4 h-4 shrink-0" />
-                                {expanded && <span>Clear Canvas</span>}
+                                <span className={`transition-opacity duration-100 whitespace-nowrap ${showText ? 'opacity-100' : 'opacity-0'}`}>Clear Canvas</span>
                             </button>
                         </>
                     )}
